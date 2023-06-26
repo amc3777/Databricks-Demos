@@ -12,13 +12,17 @@ mlflow.autolog(
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ### Use BigQuery-Spark connector to read BigQuery table into Spark Dataframe
+# MAGIC %sh
+# MAGIC pip install kaggle -q
+# MAGIC export KAGGLE_USERNAME=amc3777
+# MAGIC export KAGGLE_KEY=743e209f338973ff1601c064d08d0d41
+# MAGIC kaggle datasets download -d utkarshx27/heart-disease-diagnosis-dataset
+# MAGIC unzip heart-disease-diagnosis-dataset.zip
 
 # COMMAND ----------
 
-table = "bigquery-public-data.ml_datasets.penguins"
-df = spark.read.format("bigquery").option("table",table).load()
+import os
+df = spark.read.csv(f"file:{os.getcwd()}/dataset_heart.csv", header=True)
 display(df)
 
 # COMMAND ----------
