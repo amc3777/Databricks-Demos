@@ -12,12 +12,8 @@ mlflow.autolog(
 
 # COMMAND ----------
 
-# MAGIC %sh
-# MAGIC pip install kaggle -q
-# MAGIC export KAGGLE_USERNAME=amc3777
-# MAGIC export KAGGLE_KEY=743e209f338973ff1601c064d08d0d41
-# MAGIC kaggle datasets download -d utkarshx27/heart-disease-diagnosis-dataset
-# MAGIC unzip heart-disease-diagnosis-dataset.zip
+# MAGIC %md
+# MAGIC ### Read heart disease (Kaggle) dataset into Spark dataframe
 
 # COMMAND ----------
 
@@ -28,93 +24,14 @@ display(df)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Create temporary view in Delta Lake format
-
-# COMMAND ----------
-
-df.createOrReplaceTempView("penguins_raw")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Use SQL to check for NULL in target column
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from penguins_raw where body_mass_g IS NULL;
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Create new Delta temporary view with NULLs removed
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC create or replace temp view penguins as 
-# MAGIC select * from penguins_raw where body_mass_g IS NOT NULL;
-# MAGIC select * from penguins where body_mass_g IS NULL;
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Read back into Spark Dataframe and add ID column
+# MAGIC ### Add ID column and replace the binary classification labels
 
 # COMMAND ----------
 
 from pyspark.sql.functions import monotonically_increasing_id
 
-df = spark.read.table("penguins")
-df = df.withColumn("penguin_id", monotonically_increasing_id())
+df = df.withColumn("patient_id", monotonically_increasing_id()).replace("1", "0").replace("2", "1")
 display(df)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Create feature store table with training dataset
-
-# COMMAND ----------
-
-from pyspark.sql.functions import monotonically_increasing_id
-import uuid
-from databricks import feature_store
-from databricks.feature_store import feature_table, FeatureLookup
-
-spark.sql(f"CREATE DATABASE IF NOT EXISTS penguin_db")
-
-table_name = f"penguin_db_" + str(uuid.uuid4())[:6]
-
-fs = feature_store.FeatureStoreClient()
-
-features_df = df.drop('body_mass_g')
-
-fs.create_table(
-    name=table_name,
-    primary_keys=["penguin_id"],
-    df=features_df,
-    description="penguin features"
-)
-
-print(table_name)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### Create additional holdout dataset with sklearn train_test_split and create training set from feature store look-up
-
-# COMMAND ----------
-
-from sklearn.model_selection import train_test_split
- 
-pdf = df.toPandas()
-
-train_pdf, test_pdf = train_test_split(pdf, test_size=0.2, random_state=2)
-
-train_lookup_df = spark.createDataFrame(train_pdf[["penguin_id", "body_mass_g"]])
-test_lookup_df = spark.createDataFrame(test_pdf[["penguin_id", "body_mass_g"]])
-
-training_set = fs.create_training_set(train_lookup_df, [FeatureLookup(table_name=table_name, lookup_key="penguin_id")], label="body_mass_g", exclude_columns="penguin_id")
 
 # COMMAND ----------
 
@@ -126,17 +43,18 @@ training_set = fs.create_training_set(train_lookup_df, [FeatureLookup(table_name
 from databricks import automl
 
 summary = automl.regress(
-  dataset=training_set.load_df(),
-  target_col="body_mass_g",
+  dataset=training_set,
+  target_col="heart disease",
   # data_dir: Optional[str] = None,
-  # exclude_columns: Optional[List[str]] = None,                      # <DBR> 10.3 ML and above
+  exclude_columns=patient_id,
   # exclude_frameworks: Optional[List[str]] = None,                   # <DBR> 10.3 ML and above
   # experiment_dir: Optional[str] = None,                             # <DBR> 10.4 LTS ML and above
-  experiment_name="BQ-AutoML-reg_" + str(uuid.uuid4())[:6],
+  experiment_name="AutoML-class_" + str(uuid.uuid4())[:6],
   # feature_store_lookups: Optional[List[Dict]] = None,               # <DBR> 11.3 LTS ML and above
   # imputers: Optional[Dict[str, Union[str, Dict[str, Any]]]] = None, # <DBR> 10.4 LTS ML and above
-  # max_trials: Optional[int] = None,                                 # <DBR> 10.5 ML and below
-  primary_metric="rmse",
+  # max_trials: Optional[int] = None,
+  pos_label=1,                                 # <DBR> 10.5 ML and below
+  primary_metric="accuracy",
   # time_col: Optional[str] = None,
   timeout_minutes=30
 )
