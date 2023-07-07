@@ -1,0 +1,17 @@
+databricks_runtime: 13.2.x-cpu-ml-scala2.12
+flavors:
+  python_function:
+    artifacts:
+      xgb_model:
+        path: artifacts/xgb_model.pth
+        uri: xgb_model.pth
+    cloudpickle_version: 2.0.0
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pyfunc.model
+    python_model: python_model.pkl
+    python_version: 3.10.6
+mlflow_version: 2.4.1
+model_uuid: 34186a5fea11445ba5a02bfc5e70a681
+utc_time_created: '2023-07-06 18:57:00.308214'
