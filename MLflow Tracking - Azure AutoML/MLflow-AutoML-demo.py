@@ -57,6 +57,7 @@ summary = automl.regress(
   # exclude_columns: Optional[List[str]] = None,                      # <DBR> 10.3 ML and above
   # exclude_frameworks: Optional[List[str]] = None,                   # <DBR> 10.3 ML and above
   # experiment_dir: Optional[str] = None,                             # <DBR> 10.4 LTS ML and above
+  # experiment_name: Optional[str] = None,                            # <DBR> 12.1 ML and above
   # feature_store_lookups: Optional[List[Dict]] = None,               # <DBR> 11.3 ML and above
   # imputers: Optional[Dict[str, Union[str, Dict[str, Any]]]] = None, # <DBR> 10.4 LTS ML and above
   # max_trials: Optional[int] = None,                                 # <DBR> 10.5 ML and below
@@ -108,7 +109,7 @@ import pandas as pd
 from mlflow.tracking import MlflowClient
 from mlflow.entities import ViewType
 
-sgd_query = "attributes.run_name = 'sgd_regression'"
+sgd_query = "params.regressor LIKE 'SGDRegressor%'"
 
 sgd_run = MlflowClient().search_runs(
   experiment_ids=summary.experiment.experiment_id,
@@ -118,7 +119,7 @@ sgd_run = MlflowClient().search_runs(
   order_by=["metrics.val_rmse"]
 )[0]
 
-xgb_query = "attributes.run_name = 'xgboost'"
+xgb_query = "params.regressor LIKE 'XGBRegressor%'"
 
 xgb_run = MlflowClient().search_runs(
   experiment_ids=summary.experiment.experiment_id,
@@ -128,7 +129,7 @@ xgb_run = MlflowClient().search_runs(
   order_by=["metrics.val_rmse"]
 )[0]
 
-lgbm_query = "attributes.run_name = 'lightgbm'"
+lgbm_query = "params.regressor LIKE 'LGBMRegressor%'"
 
 lgbm_run = MlflowClient().search_runs(
   experiment_ids=summary.experiment.experiment_id,
@@ -138,7 +139,7 @@ lgbm_run = MlflowClient().search_runs(
   order_by=["metrics.val_rmse"]
 )[0]
 
-rf_query = "attributes.run_name = 'random_forest_regressor'"
+rf_query = "params.regressor LIKE 'RandomForestRegressor%'"
 
 rf_run = MlflowClient().search_runs(
   experiment_ids=summary.experiment.experiment_id,
@@ -204,7 +205,7 @@ X_train = train.drop(['MedHouseVal'], axis=1)
 
 mlflow.autolog(disable=True, log_models=False)
 
-ereg = VotingRegressor(estimators=[('xgb', mlflow.sklearn.load_model(xgb)), ('sgd', mlflow.sklearn.load_model(sgd)), ('rf', mlflow.sklearn.load_model(rf))])
+ereg = VotingRegressor(estimators=[('lgbm', mlflow.sklearn.load_model(lgbm)), ('sgd', mlflow.sklearn.load_model(sgd)), ('xgb', mlflow.sklearn.load_model(xgb))])
 model = ereg.fit(X_train, y_train)
 
 with mlflow.start_run(run_name="ensemble") as run:
@@ -271,7 +272,7 @@ mlflow.end_run()
 
 # COMMAND ----------
 
-model_name = "XGBoost Regressor"
+model_name = "LGBM Regressor"
 
 model_uri = baseline_model_uri
 
