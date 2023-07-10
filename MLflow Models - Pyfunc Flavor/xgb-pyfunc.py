@@ -78,11 +78,17 @@ conda_env = {
 
 
 from mlflow.models.signature import infer_signature
+import pandas as pd
 
 y_pred = xgb_model.predict(xgb.DMatrix(pd.DataFrame(x_test)))
 
 # Infer model signature
 signature = infer_signature(pd.DataFrame(x_test), y_pred)
+
+input_example = {
+    "0": 1.0,
+    "1": 1.5
+}
 
 # Save the MLflow Model
 mlflow_pyfunc_model_path = "xgb_mlflow_pyfunc"
@@ -93,20 +99,15 @@ with mlflow.start_run():
                                          conda_env=conda_env,
                                          artifacts=artifacts,
                                          signature=signature,
+                                         input_example=input_example,
                                          registered_model_name="xgb-clf-pyfunc-model")
 
 # Load the model in `python_function` format
 loaded_model = mlflow.pyfunc.load_model(model_uri=model_info.model_uri)
 
 # Evaluate the model
-import pandas as pd
-
 test_predictions = loaded_model.predict(pd.DataFrame(x_test))
 print(test_predictions)
-
-# COMMAND ----------
-
-
 
 # COMMAND ----------
 
