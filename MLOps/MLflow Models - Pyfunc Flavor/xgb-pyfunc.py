@@ -12,6 +12,11 @@ mlflow.autolog(
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### Train and save model to path
+
+# COMMAND ----------
+
 # Load training and test datasets
 from sys import version_info
 import xgboost as xgb
@@ -36,6 +41,11 @@ xgb_model.save_model(xgb_model_path)
 # This dictionary will be passed to `mlflow.pyfunc.save_model`, which will copy the model file
 # into the new MLflow Model's directory.
 artifacts = {"xgb_model": xgb_model_path}
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Create custom pyfunc model and package dependencies into conda environment
 
 # COMMAND ----------
 
@@ -76,6 +86,11 @@ conda_env = {
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC ### log custom pyfunc model to MLflow Tracking and load back for local inference
+
+# COMMAND ----------
+
 
 from mlflow.models.signature import infer_signature
 import pandas as pd
@@ -108,7 +123,3 @@ loaded_model = mlflow.pyfunc.load_model(model_uri=model_info.model_uri)
 # Evaluate the model
 test_predictions = loaded_model.predict(pd.DataFrame(x_test))
 print(test_predictions)
-
-# COMMAND ----------
-
-
