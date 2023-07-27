@@ -48,6 +48,8 @@ display(train)
 
 # COMMAND ----------
 
+# Show in UI
+
 from databricks import automl
 
 summary = automl.regress(
@@ -284,6 +286,8 @@ registered_model_version = mlflow.register_model(model_uri, model_name)
 # MAGIC ### Transition model version to staging
 
 # COMMAND ----------
+
+# Show in UI
 
 client = MlflowClient()
 client.transition_model_version_stage(
