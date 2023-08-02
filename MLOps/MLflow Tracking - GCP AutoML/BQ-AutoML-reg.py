@@ -131,10 +131,9 @@ summary = automl.regress(
   experiment_name="BQ-AutoML-reg_" + str(uuid.uuid4())[:6],
   # feature_store_lookups: Optional[List[Dict]] = None,               # <DBR> 11.3 LTS ML and above
   # imputers: Optional[Dict[str, Union[str, Dict[str, Any]]]] = None, # <DBR> 10.4 LTS ML and above
-  # max_trials: Optional[int] = None,                                 # <DBR> 10.5 ML and below
   primary_metric="rmse",
   # time_col: Optional[str] = None,
-  timeout_minutes=30
+  timeout_minutes=10
 )
 
 # COMMAND ----------
@@ -154,9 +153,7 @@ model = mlflow.sklearn.load_model(model_uri)
 with mlflow.start_run(
   run_name="best trial",
   experiment_id=summary.experiment.experiment_id,
-  tags={"version": "v1", "priority": "P1"},
-  description="best run from experiment") 
-  as run:
+  description="best run from experiment"):
                 fs.log_model(
                               model=model,
                               artifact_path="penguin_model",
@@ -164,7 +161,7 @@ with mlflow.start_run(
                               training_set=training_set,
                               registered_model_name="penguin_model",
                              )
-mlflow.end_run(run_name="best trial")
+mlflow.end_run()
 
 # COMMAND ----------
 
@@ -176,8 +173,9 @@ mlflow.end_run(run_name="best trial")
 from mlflow import MlflowClient
 
 client = MlflowClient()
+mv = client.search_model_versions("name='penguin_model'")
 registered_model = client.transition_model_version_stage(
-    name="penguin_model", version=4, stage="Staging"
+    name="penguin_model", version=mv[0].version, stage="Staging"
 )
 
 # COMMAND ----------
@@ -212,19 +210,17 @@ rmse
 from sklearn.dummy import DummyRegressor
 from mlflow.models import MetricThreshold
 
-with mlflow.start_run(
-  run_name="baseline model",
-  experiment_id=summary.experiment.experiment_id,
-  tags={"version": "v1", "priority": "P1"},
-  description="baseline model for validation") 
-  as run:
+with mlflow.start_run(run_name="baseline model", description="baseline model for validation") as run:
 
   dummy_regr = DummyRegressor(strategy="mean")
   baseline_model = dummy_regr.fit(train_pdf.drop(['penguin_id', 'body_mass_g'], axis=1), train_pdf[['body_mass_g']])
   mlflow.sklearn.log_model(baseline_model, "baseline_model")
   
+  baseline_model_run_id = run.info.run_id
 
-mlflow.end_run(run_name="baseline model")
+mlflow.end_run()
+
+# COMMAND ----------
 
 y_pred_base = baseline_model.predict(X_test)
 mse_base = mean_squared_error(y_test, y_pred_base)
@@ -242,9 +238,9 @@ thresholds = {
     ),
 }
 
-with mlflow.start_run() as run:
+with mlflow.start_run():
 
-  baseline_model_uri = mlflow.get_artifact_uri("baseline_model")
+  baseline_model_uri = f"runs:/{baseline_model_run_id}/baseline_model"
 
   candidate_model_uri = model_uri
   

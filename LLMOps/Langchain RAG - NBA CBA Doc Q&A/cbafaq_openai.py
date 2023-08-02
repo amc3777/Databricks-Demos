@@ -88,7 +88,3 @@ import faiss
 chunk = faiss.serialize_index(faiss_index)
 np.save("index.npy", chunk)
 index3 = faiss.deserialize_index(np.load("index.npy"))
-
-# COMMAND ----------
-
-
