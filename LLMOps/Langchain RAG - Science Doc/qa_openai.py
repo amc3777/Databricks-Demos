@@ -67,7 +67,3 @@ def answer_question(question):
 # COMMAND ----------
 
 answer_question("What are the cell types mentioned in this text?")
-
-# COMMAND ----------
-
-

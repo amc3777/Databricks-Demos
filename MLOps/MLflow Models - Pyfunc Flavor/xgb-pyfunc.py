@@ -91,7 +91,6 @@ conda_env = {
 
 # COMMAND ----------
 
-
 from mlflow.models.signature import infer_signature
 import pandas as pd
 
