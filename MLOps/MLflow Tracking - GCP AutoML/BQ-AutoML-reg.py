@@ -105,11 +105,10 @@ from sklearn.model_selection import train_test_split
 pdf = df.toPandas()
 
 train_pdf, test_pdf = train_test_split(pdf, test_size=0.2, random_state=2)
-
 train_lookup_df = spark.createDataFrame(train_pdf[["penguin_id", "body_mass_g"]])
 test_lookup_df = spark.createDataFrame(test_pdf[["penguin_id", "body_mass_g"]])
 
-test_lookup_df.write.format("parquet").save("/Volumes/uc_demo_upgraded/penguins_demo/penguins_datasets/penguins_test_dataset")
+test_lookup_df.write.format("parquet").mode("overwrite").save("/Volumes/uc_demo_upgraded/penguins_demo/penguins_datasets/penguins_test_dataset")
 
 training_set = fs.create_training_set(train_lookup_df, [FeatureLookup(table_name=table_name, lookup_key="penguin_id")], label="body_mass_g", exclude_columns="penguin_id")
 
@@ -301,8 +300,9 @@ mlflow.end_run()
 
 # COMMAND ----------
 
-
-client.set_registered_model_alias("uc_demo_upgraded.penguins_demo.penguin_model", "champion", 1)
+client.set_registered_model_alias("uc_demo_upgraded.penguins_demo.penguin_model", "champion", mv[1].version)
+client.delete_registered_model_alias("uc_demo_upgraded.penguins_demo.penguin_model", "candidate")
+client.delete_registered_model_alias("uc_demo_upgraded.penguins_demo.penguin_model", "baseline")
 
 # COMMAND ----------
 
