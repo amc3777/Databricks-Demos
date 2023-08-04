@@ -1,3 +1,0 @@
-mlflow==2.4.1
-xgboost==1.7.5
-cloudpickle==2.0.0
