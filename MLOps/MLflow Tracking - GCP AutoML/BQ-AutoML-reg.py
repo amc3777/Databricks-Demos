@@ -1,4 +1,16 @@
 # Databricks notebook source
+dbutils.widgets.removeAll()
+
+# COMMAND ----------
+
+dbutils.widgets.text("GCPproject", "bigquery-public-data", "GCP Project")
+dbutils.widgets.text("BQdataset", "ml_datasets", "BQ Dataset")
+dbutils.widgets.text("BQtable", "penguins", "BQ Table")
+dbutils.widgets.text("UCcatalog", "uc_demo_upgraded", "UC Catalog")
+dbutils.widgets.text("UCschema", "penguins_demo", "UC Schema")
+
+# COMMAND ----------
+
 import mlflow
 mlflow.autolog(
     log_input_examples=False,
@@ -17,7 +29,8 @@ mlflow.autolog(
 
 # COMMAND ----------
 
-table = "bigquery-public-data.ml_datasets.penguins"
+table = dbutils.widgets.get("GCPproject") + "." + dbutils.widgets.get("BQdataset") + "." + dbutils.widgets.get("BQtable")
+table = table
 df = spark.read.format("bigquery").option("table",table).load()
 display(df)
 
@@ -74,7 +87,6 @@ display(df)
 # COMMAND ----------
 
 from pyspark.sql.functions import monotonically_increasing_id
-import uuid
 from databricks import feature_store
 from databricks.feature_store import feature_table, FeatureLookup
 
@@ -84,13 +96,21 @@ fs = feature_store.FeatureStoreClient()
 
 features_df = df.drop('body_mass_g')
 
-fs.create_table(
-    name=table_name,
-    primary_keys=["penguin_id"],
-    df=features_df,
-    description="penguin features"
+try:
+  fs.write_table(
+  name="uc_demo_upgraded.penguins_demo.penguins_features",
+  df=features_df,
+  mode="overwrite"
 )
-
+except ValueError:
+  print("Feature table does not exist. Creating new one")
+  fs.create_table(
+  name=table_name,
+  primary_keys=["penguin_id"],
+  df=features_df,
+  description="penguin features"
+)
+  
 print(table_name)
 
 # COMMAND ----------
@@ -119,6 +139,7 @@ training_set = fs.create_training_set(train_lookup_df, [FeatureLookup(table_name
 
 # COMMAND ----------
 
+import datetime
 from databricks import automl
 
 summary = automl.regress(
@@ -128,12 +149,12 @@ summary = automl.regress(
   # exclude_columns: Optional[List[str]] = None,                      # <DBR> 10.3 ML and above
   # exclude_frameworks: Optional[List[str]] = None,                   # <DBR> 10.3 ML and above
   # experiment_dir: Optional[str] = None,                             # <DBR> 10.4 LTS ML and above
-  experiment_name="BQ-AutoML-reg_" + str(uuid.uuid4())[:6],
+  experiment_name="BQ-AutoML-regression " + str(datetime.datetime.now()),
   # feature_store_lookups: Optional[List[Dict]] = None,               # <DBR> 11.3 LTS ML and above
   # imputers: Optional[Dict[str, Union[str, Dict[str, Any]]]] = None, # <DBR> 10.4 LTS ML and above
   primary_metric="rmse",
   # time_col: Optional[str] = None,
-  timeout_minutes=15
+  timeout_minutes=30
 )
 
 # COMMAND ----------
