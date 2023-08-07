@@ -198,10 +198,6 @@ print(score_model(payload_json))
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 # MAGIC %md
 # MAGIC ### (Optional) Delete Model Serving endpoint
 
