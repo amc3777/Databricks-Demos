@@ -1,4 +1,34 @@
 # Databricks notebook source
+import warnings
+warnings.filterwarnings("ignore")
+
+# COMMAND ----------
+
+from databricks.feature_store.online_store_spec import AmazonDynamoDBSpec
+
+# secret_access_key = dbutils.secrets.get(scope="scope", key="secret-key")
+ 
+online_store_spec = AmazonDynamoDBSpec(
+  region="us-west-2",
+#   access_key_id="access-key_id",
+#   secret_access_key=secret_access_key,
+  table_name = "online_airbnb_sf_listings_features"
+)
+
+try:
+
+  fs.publish_table(
+    "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features", 
+    online_store_spec
+  )
+
+except Exception:
+
+  online_store = False
+  print("Permissions on Amazon DynamoDB to publish to an online feature store are missing. Online feature store not created.")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Get model version by alias
 
@@ -9,8 +39,15 @@ from mlflow.tracking.client import MlflowClient
 
 mlflow.set_registry_uri('databricks-uc')
 
-model_name = 'andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor'
-model_serving_endpoint_name ='airbnb_sf_listings_price_predictor_endpoint'
+if not online_store:
+
+  model_name = 'andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor'
+  model_serving_endpoint_name ='airbnb_sf_listings_price_predictor_endpoint'
+
+else:
+
+  model_name = 'andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor'
+  model_serving_endpoint_name ='fs_airbnb_sf_listings_price_predictor_endpoint'
 
 def get_latest_model_version(model_name: str):
   client = MlflowClient()
@@ -169,6 +206,25 @@ time.sleep(5)
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ### Create Model Serving input in scoring request format
+
+# COMMAND ----------
+
+from databricks import feature_store
+
+fs = feature_store.FeatureStoreClient()
+
+input_df = fs.read_table(name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features").limit(5)
+
+input_df = input_df.toPandas().to_dict(orient="split")
+
+payload_json = {"dataframe_split": input_df}
+
+display(payload_json)
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ### Score model using the Model Serving endpoint
 
 # COMMAND ----------
@@ -180,15 +236,6 @@ def score_model(data_json: dict):
         raise Exception(f"Request failed with status {response.status_code}, {response.text}")
     return response.json()
   
-payload_json = {
-  "dataframe_records": [
-    # Users in New York, see high scores for Florida 
-    {"user_id": 4, "booking_date": "2022-12-22", "destination_id": 16, "user_latitude": 40.71277, "user_longitude": -74.005974}, 
-    # Users in California, see high scores for Hawaii 
-    {"user_id": 39, "booking_date": "2022-12-22", "destination_id": 1, "user_latitude": 37.77493, "user_longitude": -122.41942} 
-  ]
-}
-
 print(score_model(payload_json))
 
 # COMMAND ----------
@@ -198,9 +245,13 @@ print(score_model(payload_json))
 
 # COMMAND ----------
 
+# TODO
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### (Optional) Delete Model Serving endpoint
 
 # COMMAND ----------
 
-func_delete_model_serving_endpoint(model_serving_endpoint_name)
+# func_delete_model_serving_endpoint(model_serving_endpoint_name)

@@ -1,4 +1,9 @@
 # Databricks notebook source
+import warnings
+warnings.filterwarnings("ignore")
+
+# COMMAND ----------
+
 # MAGIC %md
 # MAGIC ### Copy Parquet file from legacy DBFS mount to Unity Catalog Volume
 
@@ -81,6 +86,36 @@ except ValueError:
     schema=spark.read.table("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_numeric_only").schema,
     description="Numeric features of airbnb data"
 )
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Publish features to the online feature store (DynamoDB)
+
+# COMMAND ----------
+
+from databricks.feature_store.online_store_spec import AmazonDynamoDBSpec
+
+# secret_access_key = dbutils.secrets.get(scope="scope", key="secret-key")
+ 
+online_store_spec = AmazonDynamoDBSpec(
+  region="us-west-2",
+#   access_key_id="access-key_id",
+#   secret_access_key=secret_access_key,
+  table_name = "online_airbnb_sf_listings_features"
+)
+
+try:
+
+  fs.publish_table(
+    "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features", 
+    online_store_spec
+  )
+
+except Exception:
+
+  online_store = False
+  print("Permissions on Amazon DynamoDB to publish to an online feature store are missing. Online feature store not created.")
 
 # COMMAND ----------
 
@@ -172,7 +207,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 def train_model(X_train, X_test, y_train, y_test, training_set, fs):
 
-    with mlflow.start_run(run_name="sklearn_rf_baseline_{}".format(str(datetime.datetime.now()).replace(" ", "_").strip()), experiment_id=experiment_id) as run:
+    with mlflow.start_run(run_name="fs_sklearn_rf_baseline_{}".format(str(datetime.datetime.now()).replace(" ", "_").strip()), experiment_id=experiment_id) as run:
 
         rf = RandomForestRegressor(max_depth=3, n_estimators=20, random_state=42)
         rf.fit(X_train, y_train)
@@ -188,16 +223,48 @@ def train_model(X_train, X_test, y_train, y_test, training_set, fs):
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
         mlflow.log_metric("test_rmse", rmse)
-
+        
         fs.log_model(
             model=rf,
             artifact_path="feature-store-model",
             flavor=mlflow.sklearn,
             training_set=training_set,
-            registered_model_name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
+            registered_model_name="andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor",
             input_example=X_train[:5],
             signature=infer_signature(X_train, y_train)
         )
+
+    mlflow.end_run()
+
+    if not online_store:
+
+      with mlflow.start_run(run_name="sklearn_rf_baseline_{}".format(str(datetime.datetime.now()).replace(" ", "_").strip()), experiment_id=experiment_id) as run:
+
+          rf = RandomForestRegressor(max_depth=3, n_estimators=20, random_state=42)
+          rf.fit(X_train, y_train)
+          y_pred = rf.predict(X_test)
+
+          mlflow.log_input(dataset, context="training")
+
+          for param, value in rf.get_params(deep=True).items():
+              mlflow.log_param(param, value)
+
+          mlflow.log_metric("test_mse", mean_squared_error(y_test, y_pred))
+          mlflow.log_metric("test_r2_score", r2_score(y_test, y_pred))
+          mse = mean_squared_error(y_test, y_pred)
+          rmse = np.sqrt(mse)
+          mlflow.log_metric("test_rmse", rmse)
+
+          mlflow.sklearn.log_model(
+            sk_model=rf,
+            artifact_path="baseline-model",
+            input_example=X_train[:5],
+            registered_model_name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
+            signature=infer_signature(X_train, y_train)
+
+          )
+
+    mlflow.end_run()
 
 train_model(X_train, X_test, y_train, y_test, training_set, fs)
 
@@ -211,8 +278,13 @@ train_model(X_train, X_test, y_train, y_test, training_set, fs)
 from mlflow import MlflowClient
 
 client = MlflowClient()
-mv = client.search_model_versions("name='andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor'")
-client.set_registered_model_alias("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor", "baseline", mv[0].version)
+
+mv = client.search_model_versions("name='andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor'")
+client.set_registered_model_alias("andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor", "baseline", mv[0].version)
+
+if not online_store:
+  mv = client.search_model_versions("name='andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor'")
+  client.set_registered_model_alias("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor", "baseline", mv[0].version)
 
 # COMMAND ----------
 
@@ -228,6 +300,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 test_lookup_df = spark.createDataFrame(X_test)
 
-predictions_df = fs.score_batch("models:/andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor@baseline", test_lookup_df)
+predictions_df = fs.score_batch("models:/andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor@baseline", test_lookup_df)
 
 display(predictions_df.join(airbnb_df, predictions_df.index == airbnb_df.index).select(predictions_df.prediction, airbnb_df.price))
