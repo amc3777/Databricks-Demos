@@ -1,5 +1,6 @@
 # Databricks notebook source
 import pyspark.sql.functions as f
+from pyspark.sql.functions import struct, col
 import mlflow
 from hyperopt import fmin, hp, tpe, Trials
 import time as time
@@ -185,12 +186,27 @@ class GroupModel(PythonModel):
 # COMMAND ----------
 
 example_model = GroupModel(group_to_model)
-display(example_model.predict(combined_df.toPandas().head(20)))
+display(example_model.predict(combined_df.toPandas().head(5)))
 
 # COMMAND ----------
 
-
+# MAGIC %md
+# MAGIC ### Log model to MLflow
 
 # COMMAND ----------
 
+with mlflow.start_run(run_name="custom model", experiment_id=experiment_id) as run:
+    model = GroupModel(group_to_model)
+    mlflow.pyfunc.log_model("model", python_model=model)
+    model_uri = f"runs:/{run.info.run_id}/model"
 
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Load back model
+
+# COMMAND ----------
+
+loaded_model = mlflow.pyfunc.spark_udf(spark, model_uri=model_uri)
+
+display(loaded_model(struct(*map(col, combined_df.columns))))
