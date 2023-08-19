@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %sh
+# MAGIC pip install bamboolib
+
+# COMMAND ----------
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -20,6 +25,16 @@ dbutils.fs.cp("dbfs:/mnt/dbacademy-datasets/scalable-machine-learning-with-apach
 
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TABLE andrewcooleycatalog.airbnb_data.airbnb_sf_listings_raw DEEP CLONE parquet.`/Volumes/andrewcooleycatalog/airbnb_data/unstructured_data/sf-listings-2019-03-06-clean.parquet`;
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Built-in data profiling, visualization, and UI-based transformations with <a href="https://docs.databricks.com/en/notebooks/bamboolib.html#" target="_blank">bamboolib</a>
+
+# COMMAND ----------
+
+eda_df = spark.read.table("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_raw")
+display(eda_df)
 
 # COMMAND ----------
 
@@ -303,3 +318,52 @@ test_lookup_df = spark.createDataFrame(X_test)
 predictions_df = fs.score_batch("models:/andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor@baseline", test_lookup_df)
 
 display(predictions_df.join(airbnb_df, predictions_df.index == airbnb_df.index).select(predictions_df.prediction, airbnb_df.price))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### MLflow + SHAP for Explainable AI
+
+# COMMAND ----------
+
+import shap
+from mlflow.artifacts import download_artifacts
+
+numeric_cols = [x.name for x in airbnb_df.schema.fields if x.dataType == DoubleType()]
+numeric_features_df = airbnb_df.select(["index"] + numeric_cols)
+
+pdf = numeric_features_df.toPandas()
+
+train_pdf, test_pdf = train_test_split(pdf, test_size=0.2, random_state=42)
+
+y_test = test_pdf['price']
+X_test = test_pdf.drop(['price'], axis=1)
+model = mlflow.pyfunc.load_model("models:/andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor@baseline")
+
+baseline_explainer = shap.Explainer(model.predict, X_test, algorithm="permutation")
+
+with mlflow.start_run(run_name="baseline_log_model_explainer", experiment_id=experiment_id) as run:
+    mlflow.shap.log_explainer(baseline_explainer, artifact_path="baseline_shap_explainer")
+
+# load back the explainer
+test_explainer = mlflow.shap.load_explainer(f"runs:/{run.info.run_id}/baseline_shap_explainer")
+
+# run explainer on data
+shap_values = test_explainer(X_test[:100])
+
+# log explanations
+#with mlflow.start_run() as run:
+#    mlflow.shap.log_explanation(model.predict, X_test[:5])
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ### Summary plot of explanations
+
+# COMMAND ----------
+
+shap.summary_plot(shap_values, X_test[:100], plot_type="violin", plot_size=0.25)
+
+# COMMAND ----------
+
+

@@ -203,10 +203,11 @@ with mlflow.start_run(run_name="custom model", experiment_id=experiment_id) as r
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Load back model
-
-# COMMAND ----------
-
-loaded_model = mlflow.pyfunc.spark_udf(spark, model_uri=model_uri)
-
-display(loaded_model(struct(*map(col, combined_df.columns))))
+# MAGIC ### Many grouped forecasting models on Databricks:
+# MAGIC
+# MAGIC 1. <a href="https://docs.databricks.com/en/machine-learning/automl/index.html" target="_blank">AutoML for Forecasting</a>
+# MAGIC
+# MAGIC 2. <a href="https://github.com/databricks/diviner" target="_blank">Diviner</a>
+# MAGIC
+# MAGIC 3. <a href="https://www.databricks.com/solutions/accelerators/demand-forecasting" target="_blank">Solution Accelerators for Fine-grained Forecasting</a>
+# MAGIC

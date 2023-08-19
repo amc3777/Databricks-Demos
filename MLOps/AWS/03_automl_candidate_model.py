@@ -259,9 +259,4 @@ mlflow.end_run()
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ### Use MLflow evaluate API to log an evaluation run and determine best model with test dataset
-
-# COMMAND ----------
-
 

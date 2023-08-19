@@ -210,15 +210,33 @@ time.sleep(5)
 
 # COMMAND ----------
 
+from sklearn.model_selection import train_test_split
 from databricks import feature_store
 
-fs = feature_store.FeatureStoreClient()
+if not online_store:
 
-input_df = fs.read_table(name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features").limit(5)
+  fs = feature_store.FeatureStoreClient()
 
-input_df = input_df.toPandas().to_dict(orient="split")
+  input_df = fs.read_table(name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features").limit(5)
 
-payload_json = {"dataframe_split": input_df}
+  input_df = input_df.toPandas().to_dict(orient="split")
+
+  payload_json = {"dataframe_split": input_df}
+
+else:
+
+  airbnb_df = spark.read.table("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_indexed")
+
+  X = airbnb_df.select(["index"]).toPandas()
+  y = airbnb_df.select(["price"]).toPandas()
+
+  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+  test_lookup_df = spark.createDataFrame(X_test)
+
+  input_df = test_lookup_df.toPandas().head(5).to_dict(orient="split")
+
+  payload_json = {"dataframe_split": input_df}
 
 display(payload_json)
 
@@ -241,17 +259,12 @@ print(score_model(payload_json))
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Create DBSQL AI Function
-
-# COMMAND ----------
-
-# TODO
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC ### (Optional) Delete Model Serving endpoint
 
 # COMMAND ----------
 
 # func_delete_model_serving_endpoint(model_serving_endpoint_name)
+
+# COMMAND ----------
+
+
