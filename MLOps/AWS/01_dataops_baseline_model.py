@@ -202,7 +202,7 @@ except Exception:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Train a Sci-kit Learn random forest regressor with logged features and a model registered in Unity Catalog
+# MAGIC ### Train a scikit-learn random forest regressor with logged features and a model registered in Unity Catalog
 
 # COMMAND ----------
 
