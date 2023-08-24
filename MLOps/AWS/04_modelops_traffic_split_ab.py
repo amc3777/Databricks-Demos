@@ -82,14 +82,14 @@ my_json = {
             {
                 "name": "baseline",
                 "model_name": "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
-                "model_version": "7",
+                "model_version": "1",
                 "workload_size": "Small",
                 "scale_to_zero_enabled":True
             },
             {
                 "name": "candidate",
                 "model_name": "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
-                "model_version": "9",
+                "model_version": "2",
                 "workload_size": "Small",
                 "scale_to_zero_enabled":True
             }
