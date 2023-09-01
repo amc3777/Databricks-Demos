@@ -1,28 +1,28 @@
 # yaml-language-server: $schema=bundle-settings-schema.json
 bundle:
-  name: baby-names
+  name: ml-workflow
 
 resources:
   jobs:
-    retrieve-filter-baby-names-job:
-      name: retrieve-filter-baby-names-job
+    ml-workflow-job:
+      name: ml-workflow-job
       job_clusters:
-        - job_cluster_key: common-cluster
+        - job_cluster_key: photon-cluster
           new_cluster:
-            spark_version: 12.2.x-scala2.12
+            spark_version: 13.3.x-photon-scala2.12
             node_type_id: Standard_DS3_v2
             num_workers: 1
       tasks:
-        - task_key: retrieve-baby-names-task
-          job_cluster_key: common-cluster
-          notebook_task:
-            notebook_path: ./retrieve-baby-names.py
-        - task_key: filter-baby-names-task
+        - task_key: 01-save-raw-data-task
+          job_cluster_key: photon-cluster
+          spark_python_task:
+            python_file: ./01_save_raw_data.py
+        - task_key: 02-save-prepared-data-task
           depends_on:
-            - task_key: retrieve-baby-names-task
-          job_cluster_key: common-cluster
-          notebook_task:
-            notebook_path: ./filter-baby-names.py
+            - task_key: 01-save-raw-data-task
+          job_cluster_key: photon-cluster
+          spark_python_task:
+            python_file: ./02_save_prepared_data.py
 
 environments:
   development:
