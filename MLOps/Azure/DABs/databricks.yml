@@ -12,6 +12,18 @@ resources:
             spark_version: 13.3.x-photon-scala2.12
             node_type_id: Standard_DS3_v2
             num_workers: 1
+        - job_cluster_key: gpu-node
+          new_cluster:
+            spark_version: 13.3.x-gpu-ml-scala2.12
+            node_type_id: Standard_NC4as_T4_v3
+            num_workers: 0
+            spark_conf:
+              spark.master: local[*, 4]
+        - job_cluster_key: automl-cluster
+          new_cluster:
+            spark_version: 13.3.x-cpu-ml-scala2.12
+            node_type_id: Standard_D14_v2
+            num_workers: 4
       tasks:
         - task_key: 01-save-raw-data-task
           job_cluster_key: photon-cluster
@@ -23,6 +35,18 @@ resources:
           job_cluster_key: photon-cluster
           spark_python_task:
             python_file: ./02_save_prepared_data.py
+        - task_key: 03a-train-mlp-model-task
+          depends_on:
+            - task_key: 02-save-prepared-data-task
+          job_cluster_key: gpu-node
+          spark_python_task:
+            python_file: ./03a_train_mlp_model.py
+        - task_key: 03b-train-automl-model-task
+          depends_on:
+            - task_key: 02-save-prepared-data-task
+          job_cluster_key: automl-cluster
+          spark_python_task:
+            python_file: ./03b_train_automl_model.py
 
 environments:
   development:
