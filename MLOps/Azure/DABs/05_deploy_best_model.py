@@ -15,18 +15,15 @@ def get_latest_model_version(model_name: str):
   client = MlflowClient()
   alias_mv = client.get_model_version_by_alias(model_name, "champion")
   return alias_mv.version
- 
 
 token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
- 
+
 headers = {
     "Authorization": f"Bearer {token}",
     "Content-Type": "application/json"
   }
- 
-java_tags = dbutils.notebook.entry_point.getDbutils().notebook().getContext().tags()
-tags = sc._jvm.scala.collection.JavaConversions.mapAsJavaMap(java_tags)
-instance = tags["browserHostName"]
+
+instance = "adb-984752964297111.11.azuredatabricks.net"
  
 my_json = {
   "name": model_serving_endpoint_name,
