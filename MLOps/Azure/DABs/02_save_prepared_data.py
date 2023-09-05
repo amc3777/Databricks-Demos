@@ -1,9 +1,9 @@
 from pyspark.sql import functions as F
+import pandas as pd
+import numpy as np
 
 volumes_path = dbutils.jobs.taskValues.get(taskKey = "01-save-raw-data-task", key = "volumes_path")
 
-ID_COL = "ID"
-LABEL_COL = "price"
 CATALOG = "andrewcooleycatalog"
 SCHEMA = "andrewcooleyschema"
 TRAINING = f"{CATALOG}.{SCHEMA}.airbnb_price_prediction_training"
@@ -13,9 +13,18 @@ INFERENCE = f"{CATALOG}.{SCHEMA}.airbnb_price_prediction_inference"
 raw_df = (spark.read.format("parquet")
   .load(volumes_path))
 
-features_list = ["bedrooms", "neighbourhood_cleansed", "accommodates", "cancellation_policy", "beds", "host_is_superhost", "property_type", "minimum_nights", "bathrooms", "host_total_listings_count", "number_of_reviews", "review_scores_value", "review_scores_cleanliness"]
+raw_df = raw_df.toPandas()
 
-train_df, test_df, inference_df = raw_df.select(*features_list+[ID_COL, LABEL_COL]).randomSplit(weights=[0.6, 0.2, 0.2], seed=42)
+non_numeric = raw_df.select_dtypes(exclude=[np.number]).columns.to_list()
+non_numeric.pop(-1)
+
+raw_df = pd.get_dummies(raw_df, columns=non_numeric, dtype=float)
+raw_df.columns = raw_df.columns.str.replace(' ', '_')
+raw_df = spark.createDataFrame(raw_df)
+
+features_list = raw_df.columns
+
+train_df, test_df, inference_df = raw_df.select(*features_list).randomSplit(weights=[0.6, 0.2, 0.2], seed=42)
 
 (train_df
   .write

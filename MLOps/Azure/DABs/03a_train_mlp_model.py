@@ -1,4 +1,6 @@
+import numpy as np
 import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from tensorflow import keras 
 from tensorflow.keras import layers
@@ -40,27 +42,23 @@ with mlflow.start_run(run_name="tf_regressor", experiment_id=experiment_id) as m
 
   X_train = train_df.drop(ID_COL, LABEL_COL).toPandas()
   Y_train = train_df.select(LABEL_COL).toPandas().values.ravel()
-  X_train = pd.get_dummies(X_train, dtype=float)
-  X_train = X_train.to_numpy()
-
-  mean = X_train.mean(axis=0)
-  X_train -= mean
-  std = X_train.std(axis=0)
-  X_train /= std
+  min_max_scaler = MinMaxScaler()
+  X_train = min_max_scaler.fit_transform(X_train)
 
   callback = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=3, restore_best_weights=True)
 
-  inputs = keras.Input(shape=(76,))
-  x = layers.Dense(96, activation="relu")(inputs)
+  inputs = keras.Input(shape=(np.shape(X_train)[1],))
+  x = layers.Dense(128, activation="relu")(inputs)
+  x = layers.Dropout(0.5)(x)
+  x = layers.Dense(64, activation="relu")(x)
   x = layers.Dropout(0.5)(x)
   x = layers.Dense(32, activation="relu")(x)
-  x = layers.Dropout(0.5)(x)
   outputs = layers.Dense(1)(x)
   model = keras.Model(inputs=inputs, outputs=outputs)
 
   model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3), loss="mse", metrics=[tf.keras.metrics.RootMeanSquaredError()])
 
-  history = model.fit(x=X_train, y=Y_train, epochs=50, verbose="auto", batch_size=32, validation_split=0.4)
+  history = model.fit(x=X_train, y=Y_train, epochs=50, verbose="auto", batch_size=16, validation_split=0.4)
 
 model_uri = 'runs:/{}/model'.format(mlflow_run.info.run_id)
 model = mlflow.pyfunc.load_model(model_uri)
