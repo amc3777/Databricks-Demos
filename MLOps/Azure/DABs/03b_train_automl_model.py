@@ -23,7 +23,7 @@ summary = automl.regress(
   exclude_columns = [ID_COL],
   experiment_name="automl_airbnb_price_prediction_{}".format(str(uuid.uuid4())[:6]),
   primary_metric="rmse",
-  timeout_minutes=30
+  timeout_minutes=60
 )
 
 model_uri = summary.best_trial.model_path
