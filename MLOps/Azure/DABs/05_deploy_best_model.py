@@ -1,7 +1,4 @@
 # Databricks notebook source
-
-# COMMAND ----------
-
 import mlflow
 from mlflow.tracking.client import MlflowClient
 import requests
