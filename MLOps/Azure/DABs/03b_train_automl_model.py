@@ -49,6 +49,7 @@ with mlflow.start_run(run_name="automl_regressor", experiment_id=experiment_id) 
                               registered_model_name=f'{CATALOG}.{SCHEMA}.airbnb_price_prediction_automl_regressor',
                               signature=infer_signature((spark.read.table(training_path)).drop(ID_COL, LABEL_COL).toPandas(), (spark.read.table(training_path)).select(LABEL_COL).toPandas().values.ravel())
                 )
+                mlflow.log_metric("val_root_mean_squared_error", summary.best_trial.evaluation_metric_score)
 
 search_query_string = f"name='{CATALOG}.{SCHEMA}.airbnb_price_prediction_automl_regressor'"
 mv = client.search_model_versions(search_query_string)
