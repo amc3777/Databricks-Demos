@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=bundle-settings-schema.json
+bundle:
+  name: test-workflow
+
+resources:
+  jobs:
+    test-job:
+      name: test-job
+      job_clusters:
+        - job_cluster_key: cpu-node
+          new_cluster:
+            spark_version: 13.3.x-cpu-ml-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 0
+            spark_conf:
+              spark.master: local[*, 4]
+      tasks:
+        - task_key: test-task
+          job_cluster_key: cpu-node
+          notebook_task:
+            base_parameters:
+              host: "${workspace.host}"
+            notebook_path: ./00_test.py
+
+targets:
+  development:
+    workspace:
+      host: https://adb-984752964297111.11.azuredatabricks.net/

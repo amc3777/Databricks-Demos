@@ -86,7 +86,8 @@ resources:
           notebook_task:
             notebook_path: ./06_monitor_model.py
 
-environments:
+targets:
   development:
+    default: true
     workspace:
       host: https://adb-984752964297111.11.azuredatabricks.net/
