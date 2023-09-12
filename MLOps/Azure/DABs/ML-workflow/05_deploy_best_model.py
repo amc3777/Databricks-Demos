@@ -23,7 +23,7 @@ headers = {
     "Content-Type": "application/json"
   }
 
-instance = "adb-984752964297111.11.azuredatabricks.net"
+instance = dbutils.widgets.get("host")
  
 my_json = {
   "name": model_serving_endpoint_name,
@@ -39,13 +39,13 @@ my_json = {
 
 def func_create_endpoint(model_serving_endpoint_name):
 
-  endpoint_url = f"https://{instance}/api/2.0/serving-endpoints"
+  endpoint_url = f"{instance}api/2.0/serving-endpoints"
   url = f"{endpoint_url}/{model_serving_endpoint_name}"
   r = requests.get(url, headers=headers)
 
   if "RESOURCE_DOES_NOT_EXIST" in r.text:
 
-    print("Creating this new endpoint: ", f"https://{instance}/serving-endpoints/{model_serving_endpoint_name}/invocations")
+    print("Creating this new endpoint: ", f"{instance}serving-endpoints/{model_serving_endpoint_name}/invocations")
     re = requests.post(endpoint_url, headers=headers, json=my_json)
 
   else:
@@ -58,7 +58,7 @@ def func_create_endpoint(model_serving_endpoint_name):
 
     import time,json
 
-    url = f"https://{instance}/api/2.0/serving-endpoints/{model_serving_endpoint_name}"
+    url = f"{instance}api/2.0/serving-endpoints/{model_serving_endpoint_name}"
     retry = True
     total_wait = 0
 
