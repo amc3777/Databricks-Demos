@@ -77,6 +77,8 @@ resources:
             - task_key: 04-eval-models-task
           job_cluster_key: cpu-node
           notebook_task:
+            base_parameters:
+              host: "${workspace.host}"
             notebook_path: ./05_deploy_best_model.py
 
         - task_key: 06-monitor-model-task
