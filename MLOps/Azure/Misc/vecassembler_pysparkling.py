@@ -134,7 +134,7 @@ conda_env = {
 h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 sparkDF = hc.asSparkFrame(h2o_df)
 [trainingDF, testingDF] = sparkDF.randomSplit([0.8, 0.2])
-testingDF = testingDF.select([col(c).cast("double") for c in testingDF.columns])
+testingDF = testingDF.select([col(c).cast("long") for c in testingDF.columns])
 input_example = testingDF.toPandas()[:5]
 display(input_example)
 
@@ -155,27 +155,4 @@ with mlflow.start_run(run_name="VectorAssembler_ExtendedIsolationForestModel") a
 
 # COMMAND ----------
 
-import py4j
-import pandas
-import pyarrow
-import numpy
-import pyspark
-from pyspark.sql.functions import col
-import mlflow
-from pyspark.ml.feature import VectorAssembler
-import h2o
-from pysparkling import *
-from pysparkling.ml import *
 
-# COMMAND ----------
-
-df = spark.read.option("header", True).csv("dbfs:/Users/andrew.cooley@databricks.com/prostate.csv")
-df = df.select([col(c).cast("double") for c in df.columns])
-input_example = df.toPandas()
-display(input_example)
-
-# COMMAND ----------
-
-loaded_model = mlflow.pyfunc.load_model('runs:/2868be83fbae4e27b84a9c499ecb8945/VectorAssembler_ExtendedIsolationForestModel')
-test_predictions = loaded_model.predict(input_example)
-display(test_predictions)
