@@ -1,8 +1,4 @@
 # yaml-language-server: $schema=bundle-settings-schema.json
-bundle:
-  name: ml-workflow
-
-<<<<<<< Updated upstream
 resources:
   jobs:
     ml-workflow-job:
@@ -19,7 +15,7 @@ resources:
         - job_cluster_key: gpu-node
           new_cluster:
             spark_version: 13.3.x-gpu-ml-scala2.12
-            node_type_id: Standard_NC4as_T4_v3
+            node_type_id: Standard_NC6s_v3
             num_workers: 0
             spark_conf:
               spark.master: local[*, 4]
@@ -78,8 +74,6 @@ resources:
             - task_key: 04-eval-models-task
           job_cluster_key: cpu-node
           notebook_task:
-            base_parameters:
-              host: "${workspace.host}"
             notebook_path: ./05_deploy_best_model.py
 
         - task_key: 06-monitor-model-task
@@ -88,13 +82,3 @@ resources:
           job_cluster_key: cpu-node
           notebook_task:
             notebook_path: ./06_monitor_model.py
-
-targets:
-  development:
-    default: true
-    workspace:
-      host: https://adb-984752964297111.11.azuredatabricks.net/
-=======
-include:
-  - "bundle*.yml"
->>>>>>> Stashed changes
