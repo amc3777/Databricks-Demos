@@ -1,0 +1,12 @@
+# The main pipeline for my_project
+resources:
+  pipelines:
+    my_project_pipeline:
+      name: my_project_pipeline
+      target: my_project_${bundle.environment}
+      libraries:
+        - notebook:
+            path: ../src/dlt_pipeline.ipynb
+
+      configuration:
+        bundle.sourcePath: /Workspace/${workspace.file_path}/src
