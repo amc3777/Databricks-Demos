@@ -1,3 +1,5 @@
+# Databricks notebook source
+
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
@@ -20,7 +22,7 @@ mlflow.set_registry_uri("databricks-uc")
 
 mlflow.tensorflow.autolog(log_input_examples=True, silent=True, registered_model_name=f'{CATALOG}.{SCHEMA}.credit_card_default_tf_clf')
 
-experiment_name = "/Users/andrew.cooley@databricks.com/credit_card_default"
+experiment_name = dbutils.widgets.get("experiment_name")
 
 try:
 

@@ -1,3 +1,5 @@
+# Databricks notebook source
+
 import warnings
 import mlflow
 import pandas as pd
@@ -18,7 +20,7 @@ test_path = dbutils.jobs.taskValues.get(taskKey = "01-bq-load-transform-save-tas
 
 mlflow.set_registry_uri("databricks-uc")
 
-experiment_name = "/Users/andrew.cooley@databricks.com/credit_card_default"
+experiment_name = dbutils.widgets.get("experiment_name")
 
 client = MlflowClient()
 

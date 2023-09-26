@@ -1,6 +1,15 @@
 # yaml-language-server: $schema=bundle-settings-schema.json
 resources:
 
+  experiments:
+    ml-experiment:
+    
+      name: "${workspace.root_path}/credit_card_default"
+
+      permissions:
+        - level: CAN_READ
+          group_name: users
+
   jobs:
     ml-workflow-job:
 
@@ -54,30 +63,39 @@ resources:
       tasks:
         - task_key: 01-bq-load-transform-save-task
           job_cluster_key: photon-cluster
-          spark_python_task:
-            python_file: ./01_bq_load_transform_save.py
+          notebook_task:
+            base_parameters:
+              catalog: "andrewcooleycatalog"
+              schema: "andrewcooleyschema"
+            notebook_path: ./01_bq_load_transform_save.py
 
         - task_key: 02a-train-mlp-model-task
           depends_on:
             - task_key: 01-bq-load-transform-save-task
           job_cluster_key: gpu-node
-          spark_python_task:
-            python_file: ./02a_train_mlp_model.py
+          notebook_task:
+            base_parameters:
+              experiment_name: "${resources.experiments.ml-experiment.name}"
+            notebook_path: ./02a_train_mlp_model.py
 
         - task_key: 02b-train-automl-model-task
           depends_on:
             - task_key: 01-bq-load-transform-save-task
           job_cluster_key: automl-cluster
-          spark_python_task:
-            python_file: ./02b_train_automl_model.py
+          notebook_task:
+            base_parameters:
+              experiment_name: "${resources.experiments.ml-experiment.name}"
+            notebook_path: ./02b_train_automl_model.py
 
         - task_key: 03-eval-models-task
           depends_on:
             - task_key: 02a-train-mlp-model-task
             - task_key: 02b-train-automl-model-task
           job_cluster_key: cpu-node
-          spark_python_task:
-            python_file: ./03_eval_models.py
+          notebook_task:
+            base_parameters:
+              experiment_name: "${resources.experiments.ml-experiment.name}"
+            notebook_path: ./03_eval_models.py
 
         - task_key: 04-deploy-best-model-task
           depends_on:
@@ -85,3 +103,7 @@ resources:
           job_cluster_key: cpu-node
           spark_python_task:
             python_file: ./04_deploy_best_model.py
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users

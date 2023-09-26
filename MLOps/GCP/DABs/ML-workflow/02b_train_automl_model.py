@@ -1,3 +1,5 @@
+# Databricks notebook source
+
 import mlflow
 import uuid
 from databricks import automl
@@ -12,7 +14,7 @@ training_path = dbutils.jobs.taskValues.get(taskKey = "01-bq-load-transform-save
 
 mlflow.set_registry_uri("databricks-uc")
 
-experiment_name = "/Users/andrew.cooley@databricks.com/credit_card_default"
+experiment_name = dbutils.widgets.get("experiment_name")
 
 client = MlflowClient()
 

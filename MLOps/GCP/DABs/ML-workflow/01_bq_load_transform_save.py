@@ -1,11 +1,14 @@
+# Databricks notebook source
+
 from pyspark.sql import functions as F
 import pandas as pd
 import numpy as np
 
-CATALOG = "andrewcooleycatalog"
-SCHEMA = "andrewcooleyschema"
+CATALOG = dbutils.widgets.get("catalog")
+SCHEMA = dbutils.widgets.get("schema")
 TRAINING = f"{CATALOG}.{SCHEMA}.credit_card_default_training"
 TEST = f"{CATALOG}.{SCHEMA}.credit_card_default_test"
+INFERENCE = f"{CATALOG}.{SCHEMA}.credit_card_default_inference"
 
 table = "bigquery-public-data.ml_datasets.credit_card_default"
 df = spark.read.format("bigquery").option("table",table).load().drop('predicted_default_payment_next_month')
@@ -27,7 +30,7 @@ raw_df = spark.createDataFrame(raw_df)
 
 features_list = raw_df.columns
 
-train_df, test_df = raw_df.select(*features_list).randomSplit(weights=[0.8, 0.2], seed=42)
+train_df, test_df, inference_df = raw_df.select(*features_list).randomSplit(weights=[0.6, 0.2, 0.2], seed=42)
 
 (train_df
   .write
@@ -45,7 +48,16 @@ train_df, test_df = raw_df.select(*features_list).randomSplit(weights=[0.8, 0.2]
   .saveAsTable(TEST)
 )
 
+(inference_df
+  .write
+  .format("delta")
+  .mode("overwrite")
+  .option("overwriteSchema",True)
+  .saveAsTable(INFERENCE)
+)
+
 dbutils.jobs.taskValues.set(key = 'catalog', value = CATALOG)
 dbutils.jobs.taskValues.set(key = 'schema', value = SCHEMA)
 dbutils.jobs.taskValues.set(key = 'training_dataset', value = TRAINING)
 dbutils.jobs.taskValues.set(key = 'test_dataset', value = TEST)
+dbutils.jobs.taskValues.set(key = 'inference_dataset', value = INFERENCE)
