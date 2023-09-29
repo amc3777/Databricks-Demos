@@ -48,6 +48,8 @@ if accuracy_base < accuracy_cand:
 
   print(f"Candidate model is better! Deploying candidate model to Databricks Model Serving...")
 
+  dbutils.jobs.taskValues.set(key = 'champion_model', value = 'automl')
+
   with mlflow.start_run(run_name="champion_model", experiment_id=experiment_id) as mlflow_run:
 
     model_uri = f"models:/{CATALOG}.{SCHEMA}.credit_card_default_automl_clf@candidate"
@@ -65,6 +67,8 @@ if accuracy_base < accuracy_cand:
 else:
 
   print(f"Baseline model is better! Deploying baseline model to Databricks Model Serving...")
+
+  dbutils.jobs.taskValues.set(key = 'champion_model', value = 'tf')
 
   with mlflow.start_run(run_name="champion_model", experiment_id=experiment_id) as mlflow_run:
 
