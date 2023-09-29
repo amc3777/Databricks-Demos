@@ -29,7 +29,7 @@ resources:
         - job_cluster_key: gpu-node
           new_cluster:
             spark_version: 13.3.x-gpu-ml-scala2.12
-            node_type_id: a2-highgpu-1g
+            node_type_id: g2-standard-8
             num_workers: 0
             spark_conf:
               spark.master: local[*, 4]
@@ -97,12 +97,17 @@ resources:
               experiment_name: "${resources.experiments.ml-experiment.name}"
             notebook_path: ./03_eval_models.py
 
-        - task_key: 04-deploy-best-model-task
+        - task_key: 04-export-best-model-task
           depends_on:
             - task_key: 03-eval-models-task
           job_cluster_key: cpu-node
+          libraries:
+            - pypi:
+                package: google-cloud-storage
           notebook_task:
-            notebook_path: ./04_deploy_best_model.py
+            base_parameters:
+              gcs_bucket: "andrewcooley-ml-workflow"
+            notebook_path: ./04_export_best_model.py
 
       permissions:
         - level: CAN_VIEW
