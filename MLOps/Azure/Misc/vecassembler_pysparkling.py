@@ -26,8 +26,8 @@ sparkDF = hc.asSparkFrame(h2o_df)
 vecAssembler = VectorAssembler()
 vecAssembler.setOutputCol("features")
 vecAssembler.setInputCols(trainingDF.columns)
-trainingDF = vecAssembler.transform(trainingDF)
-testingDF = vecAssembler.transform(testingDF)
+trainingDF = vecAssembler.transform(trainingDF)[[('features')]]
+testingDF = vecAssembler.transform(testingDF)[[('features')]]
 display(trainingDF)
 
 # COMMAND ----------
@@ -86,7 +86,7 @@ class ModelWrapper(mlflow.pyfunc.PythonModel):
 
     vecAssembler = VectorAssembler(outputCol="features")
     vecAssembler.setInputCols(model_input.columns)
-    assembled_vector = vecAssembler.transform(model_input)
+    assembled_vector = vecAssembler.transform(model_input)[[('features')]]
     
     output = h2o_model.transform(assembled_vector)
     output = output.select("prediction").toPandas()
