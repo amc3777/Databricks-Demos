@@ -4,3 +4,11 @@ targets:
     default: true
     workspace:
       host: https://416411475796958.8.gcp.databricks.com/
+
+  qa:
+    workspace:
+      host: https://416411475796958.8.gcp.databricks.com/
+      
+  production:
+    workspace:
+      host: https://416411475796958.8.gcp.databricks.com/

@@ -1,6 +1,5 @@
 # yaml-language-server: $schema=bundle-settings-schema.json
 resources:
-
   experiments:
     ml-experiment:
     
@@ -10,105 +9,318 @@ resources:
         - level: CAN_READ
           group_name: users
 
-  jobs:
-    ml-workflow-job:
+targets:
+  development:
+    resources:
+      jobs:
+        ml-workflow-job:
 
-      name: ml-workflow-job
-      job_clusters:
+          name: ml-workflow-job
+          job_clusters:
 
-        - job_cluster_key: photon-cluster
-          new_cluster:
-            spark_version: 13.3.x-photon-scala2.12
-            node_type_id: n2-highmem-4
-            num_workers: 1
-            gcp_attributes:
-              google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
-            data_security_mode: SINGLE_USER
-            single_user_name: andrew.cooley@databricks.com
+            - job_cluster_key: photon-cluster
+              new_cluster:
+                spark_version: 13.3.x-photon-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 1
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
 
-        - job_cluster_key: gpu-node
-          new_cluster:
-            spark_version: 13.3.x-gpu-ml-scala2.12
-            node_type_id: g2-standard-8
-            num_workers: 0
-            spark_conf:
-              spark.master: local[*, 4]
-            gcp_attributes:
-              google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
-            data_security_mode: SINGLE_USER
-            single_user_name: andrew.cooley@databricks.com
+            - job_cluster_key: gpu-node
+              new_cluster:
+                spark_version: 13.3.x-gpu-ml-scala2.12
+                node_type_id: g2-standard-8
+                num_workers: 0
+                spark_conf:
+                  spark.master: local[*, 4]
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
 
-        - job_cluster_key: automl-cluster
-          new_cluster:
-            spark_version: 13.3.x-cpu-ml-scala2.12
-            node_type_id: n2-highmem-4
-            num_workers: 4
-            gcp_attributes:
-              google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
-            data_security_mode: SINGLE_USER
-            single_user_name: andrew.cooley@databricks.com
+            - job_cluster_key: automl-cluster
+              new_cluster:
+                spark_version: 13.3.x-cpu-ml-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 4
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
 
-        - job_cluster_key: cpu-node
-          new_cluster:
-            spark_version: 13.3.x-cpu-ml-scala2.12
-            node_type_id: n2-highmem-4
-            num_workers: 0
-            spark_conf:
-              spark.master: local[*, 4]
-            gcp_attributes:
-              google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
-            data_security_mode: SINGLE_USER
-            single_user_name: andrew.cooley@databricks.com
+            - job_cluster_key: cpu-node
+              new_cluster:
+                spark_version: 13.3.x-cpu-ml-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 0
+                spark_conf:
+                  spark.master: local[*, 4]
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
 
-      tasks:
-        - task_key: 01-bq-load-transform-save-task
-          job_cluster_key: photon-cluster
-          notebook_task:
-            base_parameters:
-              catalog: "andrewcooleycatalog"
-              schema: "andrewcooleyschema"
-            notebook_path: ./01_bq_load_transform_save.py
-
-        - task_key: 02a-train-mlp-model-task
-          depends_on:
+          tasks:
             - task_key: 01-bq-load-transform-save-task
-          job_cluster_key: gpu-node
-          notebook_task:
-            base_parameters:
-              experiment_name: "${resources.experiments.ml-experiment.name}"
-            notebook_path: ./02a_train_mlp_model.py
+              job_cluster_key: photon-cluster
+              notebook_task:
+                base_parameters:
+                  catalog: "andrewcooleycatalog"
+                  schema: "andrewcooleyschema"
+                notebook_path: ./01_bq_load_transform_save.py
 
-        - task_key: 02b-train-automl-model-task
-          depends_on:
-            - task_key: 01-bq-load-transform-save-task
-          job_cluster_key: automl-cluster
-          notebook_task:
-            base_parameters:
-              experiment_name: "${resources.experiments.ml-experiment.name}"
-            notebook_path: ./02b_train_automl_model.py
-
-        - task_key: 03-eval-models-task
-          depends_on:
             - task_key: 02a-train-mlp-model-task
+              depends_on:
+                - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: gpu-node
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./02a_train_mlp_model.py
+
             - task_key: 02b-train-automl-model-task
-          job_cluster_key: cpu-node
-          notebook_task:
-            base_parameters:
-              experiment_name: "${resources.experiments.ml-experiment.name}"
-            notebook_path: ./03_eval_models.py
+              depends_on:
+                - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: automl-cluster
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./02b_train_automl_model.py
 
-        - task_key: 04-export-best-model-task
-          depends_on:
             - task_key: 03-eval-models-task
-          job_cluster_key: cpu-node
-          libraries:
-            - pypi:
-                package: google-cloud-storage
-          notebook_task:
-            base_parameters:
-              gcs_bucket: "andrewcooley-ml-workflow"
-            notebook_path: ./04_export_best_model.py
+              depends_on:
+                - task_key: 02a-train-mlp-model-task
+                - task_key: 02b-train-automl-model-task
+              job_cluster_key: cpu-node
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./03_eval_models.py
 
-      permissions:
-        - level: CAN_VIEW
-          group_name: users
+            - task_key: 04-export-best-model-task
+              depends_on:
+                - task_key: 03-eval-models-task
+              job_cluster_key: cpu-node
+              libraries:
+                - pypi:
+                    package: google-cloud-storage
+              notebook_task:
+                base_parameters:
+                  gcs_bucket: "andrewcooley-ml-workflow"
+                notebook_path: ./04_export_best_model.py
+
+          permissions:
+            - level: CAN_VIEW
+              group_name: users
+
+  qa:
+    resources:
+      jobs:
+        ml-workflow-job:
+
+          name: ml-workflow-job
+          job_clusters:
+
+            - job_cluster_key: photon-cluster
+              new_cluster:
+                spark_version: 13.3.x-photon-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 1
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+            - job_cluster_key: gpu-node
+              new_cluster:
+                spark_version: 13.3.x-gpu-ml-scala2.12
+                node_type_id: g2-standard-8
+                num_workers: 0
+                spark_conf:
+                  spark.master: local[*, 4]
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+            - job_cluster_key: automl-cluster
+              new_cluster:
+                spark_version: 13.3.x-cpu-ml-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 4
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+            - job_cluster_key: cpu-node
+              new_cluster:
+                spark_version: 13.3.x-cpu-ml-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 0
+                spark_conf:
+                  spark.master: local[*, 4]
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+          tasks:
+            - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: photon-cluster
+              notebook_task:
+                base_parameters:
+                  catalog: "andrewcooleycatalog"
+                  schema: "andrewcooleyschema"
+                notebook_path: ./01_bq_load_transform_save.py
+
+            - task_key: 02a-train-mlp-model-task
+              depends_on:
+                - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: gpu-node
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./02a_train_mlp_model.py
+
+            - task_key: 02b-train-automl-model-task
+              depends_on:
+                - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: automl-cluster
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./02b_train_automl_model.py
+
+            - task_key: 03-eval-models-task
+              depends_on:
+                - task_key: 02a-train-mlp-model-task
+                - task_key: 02b-train-automl-model-task
+              job_cluster_key: cpu-node
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./03_eval_models.py
+
+            - task_key: 04-export-best-model-task
+              depends_on:
+                - task_key: 03-eval-models-task
+              job_cluster_key: cpu-node
+              libraries:
+                - pypi:
+                    package: google-cloud-storage
+              notebook_task:
+                base_parameters:
+                  gcs_bucket: "andrewcooley-ml-workflow"
+                notebook_path: ./04_export_best_model.py
+
+          permissions:
+            - level: CAN_VIEW
+              group_name: users
+
+  production:
+    resources:
+      jobs:
+        ml-workflow-job:
+
+          name: ml-workflow-job
+          job_clusters:
+
+            - job_cluster_key: photon-cluster
+              new_cluster:
+                spark_version: 13.3.x-photon-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 1
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+            - job_cluster_key: gpu-node
+              new_cluster:
+                spark_version: 13.3.x-gpu-ml-scala2.12
+                node_type_id: g2-standard-8
+                num_workers: 0
+                spark_conf:
+                  spark.master: local[*, 4]
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+            - job_cluster_key: automl-cluster
+              new_cluster:
+                spark_version: 13.3.x-cpu-ml-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 4
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+            - job_cluster_key: cpu-node
+              new_cluster:
+                spark_version: 13.3.x-cpu-ml-scala2.12
+                node_type_id: n2-highmem-4
+                num_workers: 0
+                spark_conf:
+                  spark.master: local[*, 4]
+                gcp_attributes:
+                  google_service_account: fe-prod-general-sa@fe-prod-dbx.iam.gserviceaccount.com
+                data_security_mode: SINGLE_USER
+                single_user_name: andrew.cooley@databricks.com
+
+          tasks:
+            - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: photon-cluster
+              notebook_task:
+                base_parameters:
+                  catalog: "andrewcooleycatalog"
+                  schema: "andrewcooleyschema"
+                notebook_path: ./01_bq_load_transform_save.py
+
+            - task_key: 02a-train-mlp-model-task
+              depends_on:
+                - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: gpu-node
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./02a_train_mlp_model.py
+
+            - task_key: 02b-train-automl-model-task
+              depends_on:
+                - task_key: 01-bq-load-transform-save-task
+              job_cluster_key: automl-cluster
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./02b_train_automl_model.py
+
+            - task_key: 03-eval-models-task
+              depends_on:
+                - task_key: 02a-train-mlp-model-task
+                - task_key: 02b-train-automl-model-task
+              job_cluster_key: cpu-node
+              notebook_task:
+                base_parameters:
+                  experiment_name: "${resources.experiments.ml-experiment.name}"
+                notebook_path: ./03_eval_models.py
+
+            - task_key: 04-export-best-model-task
+              depends_on:
+                - task_key: 03-eval-models-task
+              job_cluster_key: cpu-node
+              libraries:
+                - pypi:
+                    package: google-cloud-storage
+              notebook_task:
+                base_parameters:
+                  gcs_bucket: "andrewcooley-ml-workflow"
+                notebook_path: ./04_export_best_model.py
+
+          permissions:
+            - level: CAN_VIEW
+              group_name: users
