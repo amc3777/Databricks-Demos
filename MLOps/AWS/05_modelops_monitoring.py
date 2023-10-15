@@ -359,4 +359,4 @@ assert(run_info.state == lm.RefreshState.SUCCESS)
 
 # COMMAND ----------
 
-#lm.delete_monitor(table_name=TABLE_NAME)
+lm.delete_monitor(table_name=TABLE_NAME)

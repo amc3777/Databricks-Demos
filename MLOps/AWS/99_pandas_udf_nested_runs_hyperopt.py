@@ -13,12 +13,12 @@ from sklearn.metrics import mean_squared_error
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Generate 1M total records for 10 forecasting groups in a Spark dataframe
+# MAGIC ### Generate total records for 10 forecasting groups in a Spark dataframe
 
 # COMMAND ----------
 
 df = (spark
-      .range(1000*1000)
+      .range(100000000)
       .select(f.col("id").alias("record_id"), (f.col("id")%10).alias("group_id"))
       .withColumn("feature_1", f.rand() * 1)
       .withColumn("feature_2", f.rand() * 2)
@@ -27,6 +27,7 @@ df = (spark
      )
 
 display(df)
+print(f'{df.count()} records in the dataset')
 
 # COMMAND ----------
 
@@ -118,7 +119,7 @@ def train_model(df_pandas: pd.DataFrame) -> pd.DataFrame:
           return_df = pd.DataFrame([[group_id, n_used, artifact_uri, mse]], 
                                     columns=["group_id", "n_used", "model_path", "mse"])
 
-    return return_df 
+    return return_df
 
 # COMMAND ----------
 

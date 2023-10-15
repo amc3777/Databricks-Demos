@@ -64,7 +64,7 @@ def get_latest_model_version(model_name: str):
 import requests
 
 token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
- 
+
 headers = {
     "Authorization": f"Bearer {token}",
     "Content-Type": "application/json"
@@ -75,15 +75,17 @@ tags = sc._jvm.scala.collection.JavaConversions.mapAsJavaMap(java_tags)
 instance = tags["browserHostName"]
  
 my_json = {
-  "name": model_serving_endpoint_name,
-  "config": {
-   "served_models": [{
-     "model_name": model_name,
-     "model_version": get_latest_model_version(model_name=model_name),
-     "workload_size": "Small",
-     "scale_to_zero_enabled": True
-   }]
- }
+    "name": model_serving_endpoint_name,
+    "config": {
+        "served_models": [
+            {
+                "model_name": model_name,
+                "model_version": get_latest_model_version(model_name=model_name),
+                "workload_size": "Small",
+                "scale_to_zero_enabled": True,
+            }
+        ]
+    }
 }
 
 # COMMAND ----------
@@ -264,7 +266,3 @@ print(score_model(payload_json))
 # COMMAND ----------
 
 # func_delete_model_serving_endpoint(model_serving_endpoint_name)
-
-# COMMAND ----------
-
-
