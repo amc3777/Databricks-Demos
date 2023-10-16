@@ -6,6 +6,14 @@ resources:
       name: ml-workflow-job
       job_clusters:
 
+        - job_cluster_key: cpu-node
+          new_cluster:
+            spark_version: 13.3.x-cpu-ml-scala2.12
+            node_type_id: Standard_DS3_v2
+            num_workers: 0
+            spark_conf:
+              spark.master: local[*, 4]
+
         - job_cluster_key: photon-cluster
           new_cluster:
             spark_version: 13.3.x-photon-scala2.12
@@ -26,16 +34,15 @@ resources:
             node_type_id: Standard_D14_v2
             num_workers: 4
 
-        - job_cluster_key: cpu-node
-          new_cluster:
-            spark_version: 13.3.x-cpu-ml-scala2.12
-            node_type_id: Standard_DS3_v2
-            num_workers: 0
-            spark_conf:
-              spark.master: local[*, 4]
-
       tasks:
+        - task_key: 00-create-uc-containers
+          job_cluster_key: cpu-node
+          notebook_task:
+            notebook_path: ./00_create_uc_containers.py
+
         - task_key: 01-save-raw-data-task
+          depends_on:
+            - task_key: 00-create-uc-containers
           job_cluster_key: photon-cluster
           spark_python_task:
             python_file: ./01_save_raw_data.py
