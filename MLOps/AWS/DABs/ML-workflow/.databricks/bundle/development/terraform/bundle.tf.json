@@ -18,7 +18,7 @@
           {
             "job_cluster_key": "cpu-node",
             "new_cluster": {
-              "node_type_id": "Standard_DS3_v2",
+              "node_type_id": "i3.xlarge",
               "spark_conf": {
                 "spark.master": "local[*, 4]"
               },
@@ -28,7 +28,7 @@
           {
             "job_cluster_key": "photon-cluster",
             "new_cluster": {
-              "node_type_id": "Standard_DS3_v2",
+              "node_type_id": "i3.xlarge",
               "num_workers": 1,
               "spark_version": "13.3.x-photon-scala2.12"
             }
@@ -36,19 +36,29 @@
           {
             "job_cluster_key": "gpu-node",
             "new_cluster": {
-              "node_type_id": "Standard_NC6s_v3",
+              "node_type_id": "p3.2xlarge",
               "spark_conf": {
                 "spark.master": "local[*, 4]"
               },
-              "spark_version": "13.3.x-gpu-ml-scala2.12"
+              "spark_version": "13.3.x-gpu-ml-scala2.12",
+              "aws_attributes": {
+                "ebs_volume_count": 1,
+                "ebs_volume_size": 100,
+                "ebs_volume_type": "GENERAL_PURPOSE_SSD"
+              }
             }
           },
           {
             "job_cluster_key": "automl-cluster",
             "new_cluster": {
-              "node_type_id": "Standard_D14_v2",
+              "node_type_id": "r4.4xlarge",
               "num_workers": 4,
-              "spark_version": "13.3.x-cpu-ml-scala2.12"
+              "spark_version": "13.3.x-cpu-ml-scala2.12",
+              "aws_attributes": {
+                "ebs_volume_count": 1,
+                "ebs_volume_size": 100,
+                "ebs_volume_type": "GENERAL_PURPOSE_SSD"
+              }
             }
           }
         ],
@@ -133,7 +143,7 @@
             ],
             "notebook_task": {
               "base_parameters": {
-                "host": "https://adb-984752964297111.11.azuredatabricks.net/"
+                "host": "https://e2-demo-field-eng.cloud.databricks.com/"
               },
               "notebook_path": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/05_deploy_best_model"
             }

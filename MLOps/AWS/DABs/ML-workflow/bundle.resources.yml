@@ -9,7 +9,7 @@ resources:
         - job_cluster_key: cpu-node
           new_cluster:
             spark_version: 13.3.x-cpu-ml-scala2.12
-            node_type_id: Standard_DS3_v2
+            node_type_id: i3.xlarge
             num_workers: 0
             spark_conf:
               spark.master: local[*, 4]
@@ -17,22 +17,30 @@ resources:
         - job_cluster_key: photon-cluster
           new_cluster:
             spark_version: 13.3.x-photon-scala2.12
-            node_type_id: Standard_DS3_v2
+            node_type_id: i3.xlarge
             num_workers: 1
 
         - job_cluster_key: gpu-node
           new_cluster:
             spark_version: 13.3.x-gpu-ml-scala2.12
-            node_type_id: Standard_NC6s_v3
+            node_type_id: p3.2xlarge
             num_workers: 0
             spark_conf:
               spark.master: local[*, 4]
+            aws_attributes:
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 1
+              ebs_volume_size: 100
 
         - job_cluster_key: automl-cluster
           new_cluster:
             spark_version: 13.3.x-cpu-ml-scala2.12
-            node_type_id: Standard_D14_v2
+            node_type_id: r4.4xlarge
             num_workers: 4
+            aws_attributes:
+              ebs_volume_type: GENERAL_PURPOSE_SSD
+              ebs_volume_count: 1
+              ebs_volume_size: 100
 
       tasks:
         - task_key: 00-create-uc-containers
