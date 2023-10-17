@@ -363,3 +363,7 @@ shap_values = test_explainer(X_test[:100])
 # COMMAND ----------
 
 shap.summary_plot(shap_values, X_test[:100], plot_type="violin", plot_size=0.25)
+
+# COMMAND ----------
+
+

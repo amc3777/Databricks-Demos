@@ -256,3 +256,7 @@ with mlflow.start_run(run_name="model_validation", experiment_id=experiment_id):
        print("Candidate model is better than baseline model.")
       
 mlflow.end_run()
+
+# COMMAND ----------
+
+
