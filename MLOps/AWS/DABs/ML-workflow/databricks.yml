@@ -1,0 +1,6 @@
+# yaml-language-server: $schema=bundle-settings-schema.json
+bundle:
+  name: ml-workflow
+
+include:
+  - "bundle*.yml"
