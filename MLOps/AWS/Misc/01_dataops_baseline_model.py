@@ -23,7 +23,7 @@ dbutils.widgets.text("volume",volume)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ### Copy Parquet file from legacy DBFS mount to Unity Catalog Volume
+# MAGIC ### Copy Parquet file to a Unity Catalog Volume
 
 # COMMAND ----------
 
