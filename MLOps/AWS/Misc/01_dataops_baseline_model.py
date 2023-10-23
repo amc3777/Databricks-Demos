@@ -27,7 +27,7 @@ dbutils.widgets.text("volume",volume)
 
 # COMMAND ----------
 
-dbutils.fs.cp("dbfs:/mnt/dbacademy-datasets/scalable-machine-learning-with-apache-spark/v02/airbnb/sf-listings/sf-listings-2019-03-06-clean.parquet", f"dbfs:/Volumes/{catalog}/{schema}/{volume}/sf-listings-2019-03-06-clean.parquet", recurse=True)
+dbutils.fs.cp("/Volumes/odl_instructor_1127516_catalog/odl_instructor_1127516_schema/odl_instructor_1127516_managedvolume/sf-listings-2019-03-06-clean.parquet", f"dbfs:/Volumes/{catalog}/{schema}/{volume}/sf-listings-2019-03-06-clean.parquet", recurse=True)
 
 # COMMAND ----------
 
