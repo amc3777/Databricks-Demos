@@ -221,8 +221,16 @@ thresholds = {
 
 # COMMAND ----------
 
-baseline_mv = client.get_model_version_by_alias(f"{catalog}.{schema}.airbnb_sf_listings_price_predictor", "baseline")
-baseline_model_uri = client.get_model_version_download_uri(f"{catalog}.{schema}.airbnb_sf_listings_price_predictor", int(baseline_mv.version))
+from mlflow.entities import ViewType
+
+run = MlflowClient().search_runs(
+    experiment_ids=experiment_id,
+    filter_string="attributes.`run_name` LIKE 'sklearn_rf_baseline%'",
+    run_view_type=ViewType.ACTIVE_ONLY,
+    max_results=1
+)[0]
+
+baseline_model_uri = f'dbfs:/databricks/mlflow-tracking/{experiment_id}/{run.info.run_id}/artifacts/baseline-model'
 
 with mlflow.start_run(run_name="model_validation", experiment_id=experiment_id):
 
