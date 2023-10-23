@@ -1,3 +1,4 @@
+# Databricks notebook source
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
@@ -22,7 +23,7 @@ mlflow.set_registry_uri("databricks-uc")
 
 mlflow.tensorflow.autolog(log_input_examples=True, silent=True, registered_model_name=f'{CATALOG}.{SCHEMA}.airbnb_price_prediction_tf_regressor')
 
-experiment_name = "/Users/andrew.cooley@databricks.com/airbnb_price_prediction"
+experiment_name = dbutils.widgets.get("experiment_name")
 
 try:
 

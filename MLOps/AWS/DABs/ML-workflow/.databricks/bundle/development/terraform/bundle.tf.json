@@ -67,7 +67,7 @@
             "job_cluster_key": "cpu-node",
             "task_key": "00-create-uc-containers",
             "notebook_task": {
-              "notebook_path": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/00_create_uc_containers"
+              "notebook_path": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/00_create_uc_containers"
             }
           },
           {
@@ -79,7 +79,7 @@
               }
             ],
             "spark_python_task": {
-              "python_file": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/01_save_raw_data.py"
+              "python_file": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/01_save_raw_data.py"
             }
           },
           {
@@ -91,7 +91,7 @@
               }
             ],
             "spark_python_task": {
-              "python_file": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/02_save_prepared_data.py"
+              "python_file": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/02_save_prepared_data.py"
             }
           },
           {
@@ -102,8 +102,11 @@
                 "task_key": "02-save-prepared-data-task"
               }
             ],
-            "spark_python_task": {
-              "python_file": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/03a_train_mlp_model.py"
+            "notebook_task": {
+              "base_parameters": {
+                "experiment_name": "${databricks_mlflow_experiment.ml-experiment.name}"
+              },
+              "notebook_path": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/03a_train_mlp_model"
             }
           },
           {
@@ -114,8 +117,11 @@
                 "task_key": "02-save-prepared-data-task"
               }
             ],
-            "spark_python_task": {
-              "python_file": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/03b_train_automl_model.py"
+            "notebook_task": {
+              "base_parameters": {
+                "experiment_name": "${databricks_mlflow_experiment.ml-experiment.name}"
+              },
+              "notebook_path": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/03b_train_automl_model"
             }
           },
           {
@@ -129,8 +135,11 @@
                 "task_key": "03b-train-automl-model-task"
               }
             ],
-            "spark_python_task": {
-              "python_file": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/04_eval_models.py"
+            "notebook_task": {
+              "base_parameters": {
+                "experiment_name": "${databricks_mlflow_experiment.ml-experiment.name}"
+              },
+              "notebook_path": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/04_eval_models"
             }
           },
           {
@@ -143,9 +152,9 @@
             ],
             "notebook_task": {
               "base_parameters": {
-                "host": "https://e2-demo-field-eng.cloud.databricks.com/"
+                "host": "https://dbc-208d8f62-4613.cloud.databricks.com/"
               },
-              "notebook_path": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/05_deploy_best_model"
+              "notebook_path": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/05_deploy_best_model"
             }
           },
           {
@@ -157,8 +166,33 @@
               }
             ],
             "notebook_task": {
-              "notebook_path": "/Users/andrew.cooley@databricks.com/.bundle/ml-workflow/development/files/06_monitor_model"
+              "notebook_path": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/files/06_monitor_model"
             }
+          }
+        ]
+      }
+    },
+    "databricks_mlflow_experiment": {
+      "ml-experiment": {
+        "name": "/Users/odl_instructor_1127516@databrickslabs.com/.bundle/ml-workflow/development/automated_airbnb_price_prediction"
+      }
+    },
+    "databricks_permissions": {
+      "job_ml-workflow-job": {
+        "job_id": "${databricks_job.ml-workflow-job.id}",
+        "access_control": [
+          {
+            "group_name": "users",
+            "permission_level": "CAN_VIEW"
+          }
+        ]
+      },
+      "mlflow_experiment_ml-experiment": {
+        "experiment_id": "${databricks_mlflow_experiment.ml-experiment.id}",
+        "access_control": [
+          {
+            "group_name": "users",
+            "permission_level": "CAN_READ"
           }
         ]
       }

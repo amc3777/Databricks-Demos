@@ -1,3 +1,4 @@
+# Databricks notebook source
 import mlflow
 import uuid
 from databricks import automl
@@ -13,7 +14,7 @@ SCHEMA = "andrewcooleyschema"
 
 mlflow.set_registry_uri("databricks-uc")
 
-experiment_name = "/Users/andrew.cooley@databricks.com/airbnb_price_prediction"
+experiment_name = dbutils.widgets.get("experiment_name")
 
 client = MlflowClient()
 

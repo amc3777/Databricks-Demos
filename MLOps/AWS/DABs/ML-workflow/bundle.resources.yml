@@ -1,9 +1,24 @@
 # yaml-language-server: $schema=bundle-settings-schema.json
 resources:
+
+  experiments:
+    ml-experiment:
+    
+      name: "${workspace.root_path}/automated_airbnb_price_prediction"
+
+      permissions:
+        - level: CAN_READ
+          group_name: users
+
   jobs:
     ml-workflow-job:
 
       name: ml-workflow-job
+
+      permissions:
+        - level: CAN_VIEW
+          group_name: users
+
       job_clusters:
 
         - job_cluster_key: cpu-node
@@ -66,23 +81,29 @@ resources:
           depends_on:
             - task_key: 02-save-prepared-data-task
           job_cluster_key: gpu-node
-          spark_python_task:
-            python_file: ./03a_train_mlp_model.py
+          notebook_task:
+            base_parameters:
+              experiment_name: "${resources.experiments.ml-experiment.name}"
+            notebook_path: ./03a_train_mlp_model.py
 
         - task_key: 03b-train-automl-model-task
           depends_on:
             - task_key: 02-save-prepared-data-task
           job_cluster_key: automl-cluster
-          spark_python_task:
-            python_file: ./03b_train_automl_model.py
+          notebook_task:
+            base_parameters:
+              experiment_name: "${resources.experiments.ml-experiment.name}"
+            notebook_path: ./03b_train_automl_model.py
 
         - task_key: 04-eval-models-task
           depends_on:
             - task_key: 03a-train-mlp-model-task
             - task_key: 03b-train-automl-model-task
           job_cluster_key: cpu-node
-          spark_python_task:
-            python_file: ./04_eval_models.py
+          notebook_task:
+            base_parameters:
+              experiment_name: "${resources.experiments.ml-experiment.name}"
+            notebook_path: ./04_eval_models.py
 
         - task_key: 05-deploy-best-model-task
           depends_on:

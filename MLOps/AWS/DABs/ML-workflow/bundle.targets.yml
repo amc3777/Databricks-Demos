@@ -3,4 +3,4 @@ targets:
   development:
     default: true
     workspace:
-      host: https://e2-demo-field-eng.cloud.databricks.com/
+      host: https://dbc-208d8f62-4613.cloud.databricks.com/
