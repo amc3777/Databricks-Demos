@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### Imports
+
+# COMMAND ----------
+
 import pyspark.sql.functions as f
 from pyspark.sql.functions import struct, col
 import mlflow
@@ -212,7 +217,3 @@ with mlflow.start_run(run_name="custom model", experiment_id=experiment_id) as r
 # MAGIC
 # MAGIC 3. <a href="https://www.databricks.com/solutions/accelerators/demand-forecasting" target="_blank">Solution Accelerators for Fine-grained Forecasting</a>
 # MAGIC
-
-# COMMAND ----------
-
-

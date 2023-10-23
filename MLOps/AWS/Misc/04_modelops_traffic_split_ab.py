@@ -1,31 +1,24 @@
 # Databricks notebook source
-import warnings
-warnings.filterwarnings("ignore")
+# MAGIC %md
+# MAGIC ### Notebook set-up steps
 
 # COMMAND ----------
 
-from databricks.feature_store.online_store_spec import AmazonDynamoDBSpec
+import warnings
 
-# secret_access_key = dbutils.secrets.get(scope="scope", key="secret-key")
- 
-online_store_spec = AmazonDynamoDBSpec(
-  region="us-west-2",
-#   access_key_id="access-key_id",
-#   secret_access_key=secret_access_key,
-  table_name = "online_airbnb_sf_listings_features"
-)
+warnings.filterwarnings("ignore")
 
-try:
+dbutils.widgets.removeAll()
 
-  fs.publish_table(
-    "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features", 
-    online_store_spec
-  )
+user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+uc_prefix = user.replace(".", "").split("@")[0]
+catalog = uc_prefix + "_catalog"
+schema = uc_prefix + "_schema"
+volume = uc_prefix + "_managedvolume"
 
-except Exception:
-
-  online_store = False
-  print("Permissions on Amazon DynamoDB to publish to an online feature store are missing. Online feature store not created.")
+dbutils.widgets.text("catalog", catalog)
+dbutils.widgets.text("schema", schema)
+dbutils.widgets.text("volume",volume)
 
 # COMMAND ----------
 
@@ -39,19 +32,11 @@ from mlflow.tracking.client import MlflowClient
 
 mlflow.set_registry_uri('databricks-uc')
 
-client = MlflowClient()
-
-if not online_store:
-
-  model_name = 'andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor'
-  model_serving_endpoint_name ='ab_airbnb_sf_listings_price_predictor_endpoint'
-
-else:
-
-  model_name = 'andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor'
-  model_serving_endpoint_name ='ab_fs_airbnb_sf_listings_price_predictor_endpoint'
+model_name = f'{catalog}.{schema}.airbnb_sf_listings_price_predictor'
+model_serving_endpoint_name = f'{uc_prefix}_ab_airbnb_price_predictor_endpoint'
 
 def get_latest_model_version(model_name: str):
+  client = MlflowClient()
   alias_mv = client.get_model_version_by_alias(model_name, "candidate")
   return alias_mv.version
 
@@ -76,20 +61,20 @@ tags = sc._jvm.scala.collection.JavaConversions.mapAsJavaMap(java_tags)
 instance = tags["browserHostName"]
  
 my_json = {
-    "name": "ab_airbnb_sf_listings_price_predictor_endpoint",
+    "name": model_serving_endpoint_name,
     "config": {
         "served_models": [
             {
                 "name": "baseline",
-                "model_name": "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
-                "model_version": "1",
+                "model_name": model_name,
+                "model_version": str(int(get_latest_model_version(model_name=model_name))-1),
                 "workload_size": "Small",
                 "scale_to_zero_enabled":True
             },
             {
                 "name": "candidate",
-                "model_name": "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
-                "model_version": "2",
+                "model_name": model_name,
+                "model_version": get_latest_model_version(model_name=model_name),
                 "workload_size": "Small",
                 "scale_to_zero_enabled":True
             }
@@ -236,30 +221,13 @@ time.sleep(5)
 from sklearn.model_selection import train_test_split
 from databricks import feature_store
 
-if not online_store:
+fs = feature_store.FeatureStoreClient()
 
-  fs = feature_store.FeatureStoreClient()
+input_df = fs.read_table(name=f"{catalog}.{schema}.airbnb_sf_listings_features").limit(5)
 
-  input_df = fs.read_table(name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features").limit(5)
+input_df = input_df.toPandas().to_dict(orient="split")
 
-  input_df = input_df.toPandas().to_dict(orient="split")
-
-  payload_json = {"dataframe_split": input_df}
-
-else:
-
-  airbnb_df = spark.read.table("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_indexed")
-
-  X = airbnb_df.select(["index"]).toPandas()
-  y = airbnb_df.select(["price"]).toPandas()
-
-  X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-  test_lookup_df = spark.createDataFrame(X_test)
-
-  input_df = test_lookup_df.toPandas().head(5).to_dict(orient="split")
-
-  payload_json = {"dataframe_split": input_df}
+payload_json = {"dataframe_split": input_df}
 
 display(payload_json)
 

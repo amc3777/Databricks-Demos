@@ -1,31 +1,24 @@
 # Databricks notebook source
-import warnings
-warnings.filterwarnings("ignore")
+# MAGIC %md
+# MAGIC ### Notebook set-up steps
 
 # COMMAND ----------
 
-from databricks.feature_store.online_store_spec import AmazonDynamoDBSpec
+import warnings
 
-# secret_access_key = dbutils.secrets.get(scope="scope", key="secret-key")
- 
-online_store_spec = AmazonDynamoDBSpec(
-  region="us-west-2",
-#   access_key_id="access-key_id",
-#   secret_access_key=secret_access_key,
-  table_name = "online_airbnb_sf_listings_features"
-)
+warnings.filterwarnings("ignore")
 
-try:
+dbutils.widgets.removeAll()
 
-  fs.publish_table(
-    "andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features", 
-    online_store_spec
-  )
+user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+uc_prefix = user.replace(".", "").split("@")[0]
+catalog = uc_prefix + "_catalog"
+schema = uc_prefix + "_schema"
+volume = uc_prefix + "_managedvolume"
 
-except Exception:
-
-  online_store = False
-  print("Permissions on Amazon DynamoDB to publish to an online feature store are missing. Online feature store not created.")
+dbutils.widgets.text("catalog", catalog)
+dbutils.widgets.text("schema", schema)
+dbutils.widgets.text("volume",volume)
 
 # COMMAND ----------
 
@@ -40,7 +33,7 @@ from sklearn.model_selection import train_test_split
 
 from pyspark.sql.types import DoubleType
 
-airbnb_df = spark.read.table("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_indexed")
+airbnb_df = spark.read.table(f"{catalog}.{schema}.airbnb_sf_listings_indexed")
 numeric_cols = [x.name for x in airbnb_df.schema.fields if x.dataType == DoubleType()]
 numeric_features_df = airbnb_df.select(["index"] + numeric_cols)
 
@@ -52,7 +45,7 @@ test_lookup_df = spark.createDataFrame(test_pdf[["index", "price"]])
 
 feature_lookups = [
     FeatureLookup(
-      table_name = 'andrewcooleycatalog.airbnb_data.airbnb_sf_listings_features',
+      table_name = f'{catalog}.{schema}.airbnb_sf_listings_features',
       feature_names = numeric_features_df.select([c for c in numeric_features_df.columns if c not in {'index','price'}]).columns,
       lookup_key = 'index',
     )]
@@ -75,6 +68,7 @@ training_set = fs.create_training_set(
 
 import datetime
 from databricks import automl
+import uuid
 
 summary = automl.regress(
   dataset=training_set.load_df(),
@@ -83,12 +77,12 @@ summary = automl.regress(
   # exclude_columns: Optional[List[str]] = None,                      # <DBR> 10.3 ML and above
   # exclude_frameworks: Optional[List[str]] = None,                   # <DBR> 10.3 ML and above
   # experiment_dir: Optional[str] = None,                             # <DBR> 10.4 LTS ML and above
-  experiment_name="automl_airbnb_price_prediction",
+  experiment_name="automl_airbnb_price_prediction_{}".format(str(uuid.uuid4())[:6]),
   # feature_store_lookups: Optional[List[Dict]] = None,               # <DBR> 11.3 LTS ML and above
   # imputers: Optional[Dict[str, Union[str, Dict[str, Any]]]] = None, # <DBR> 10.4 LTS ML and above
   primary_metric="rmse",
   # time_col: Optional[str] = None,
-  timeout_minutes=60
+  timeout_minutes=10
 )
 
 # COMMAND ----------
@@ -109,8 +103,7 @@ model = mlflow.sklearn.load_model(model_uri)
 
 import mlflow
 
-user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
-experiment_name = "/Users/{}/airbnb_price_prediction".format(user)
+experiment_name = f"/Users/{user}/airbnb_price_prediction"
 
 try:
 
@@ -120,7 +113,7 @@ try:
 
 except Exception:
 
-  search_query_string = "name ='{}'".format(experiment_name)
+  search_query_string = f"name ='{experiment_name}'"
   experiment_id = mlflow.search_experiments(filter_string=search_query_string)[0].experiment_id
   print("Experiment already exists.")
 
@@ -140,23 +133,20 @@ with mlflow.start_run(run_name="fs_automl_candidate_{}".format(str(datetime.date
                               artifact_path="automl-feature-store-model",
                               flavor=mlflow.sklearn,
                               training_set=training_set,
-                              registered_model_name="andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor",
+                              registered_model_name=f"{catalog}.{schema}.fs_airbnb_sf_listings_price_predictor",
                               input_example=training_set.load_df().drop('price').toPandas()[:5],
                               signature=infer_signature(training_set.load_df().drop('price').toPandas(), training_set.load_df().toPandas()[["price"]])
                              )
 mlflow.end_run()
 
-if not online_store:
-
-  with mlflow.start_run(run_name="automl_candidate_{}".format(str(datetime.datetime.now()).replace(" ", "_").strip()), experiment_id=experiment_id) as run:
-                mlflow.sklearn.log_model(
-                              sk_model=model,
-                              artifact_path="automl-model",
-                              input_example=training_set.load_df().drop('price').toPandas()[:5],
-                              registered_model_name="andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor",
-                              signature=infer_signature(training_set.load_df().drop('price').toPandas(), training_set.load_df().toPandas()[["price"]])
-                              )
-mlflow.end_run()
+with mlflow.start_run(run_name="automl_candidate_{}".format(str(datetime.datetime.now()).replace(" ", "_").strip()), experiment_id=experiment_id) as run:
+              mlflow.sklearn.log_model(
+                            sk_model=model,
+                            artifact_path="automl-model",
+                            input_example=training_set.load_df().drop('price').toPandas()[:5],
+                            registered_model_name=f"{catalog}.{schema}.airbnb_sf_listings_price_predictor",
+                            signature=infer_signature(training_set.load_df().drop('price').toPandas(), training_set.load_df().toPandas()[["price"]])
+                            )
 
 # COMMAND ----------
 
@@ -191,12 +181,11 @@ from mlflow import MlflowClient
 
 client = MlflowClient()
 
-mv = client.search_model_versions("name='andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor'")
-client.set_registered_model_alias("andrewcooleycatalog.airbnb_data.fs_airbnb_sf_listings_price_predictor", "candidate", mv[0].version)
+mv = client.search_model_versions(f"name='{catalog}.{schema}.fs_airbnb_sf_listings_price_predictor'")
+client.set_registered_model_alias(f"{catalog}.{schema}.fs_airbnb_sf_listings_price_predictor", "candidate", mv[0].version)
 
-if not online_store:
-  mv = client.search_model_versions("name='andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor'")
-  client.set_registered_model_alias("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor", "candidate", mv[0].version)
+mv = client.search_model_versions(f"name='{catalog}.{schema}.airbnb_sf_listings_price_predictor'")
+client.set_registered_model_alias(f"{catalog}.{schema}.airbnb_sf_listings_price_predictor", "candidate", mv[0].version)
 
 # COMMAND ----------
 
@@ -208,7 +197,7 @@ if not online_store:
 from mlflow.models import MetricThreshold
 from mlflow.models.evaluation.validation import ModelValidationFailedException
 
-baseline_model = mlflow.pyfunc.load_model("models:/andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor@baseline")
+baseline_model = mlflow.pyfunc.load_model(f"models:/{catalog}.{schema}.airbnb_sf_listings_price_predictor@baseline")
 
 y_pred_base = baseline_model.predict(X_test)
 mse_base = mean_squared_error(y_test, y_pred_base)
@@ -232,8 +221,8 @@ thresholds = {
 
 # COMMAND ----------
 
-baseline_mv = client.get_model_version_by_alias("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor", "baseline")
-baseline_model_uri = client.get_model_version_download_uri("andrewcooleycatalog.airbnb_data.airbnb_sf_listings_price_predictor", int(baseline_mv.version))
+baseline_mv = client.get_model_version_by_alias(f"{catalog}.{schema}.airbnb_sf_listings_price_predictor", "baseline")
+baseline_model_uri = client.get_model_version_download_uri(f"{catalog}.{schema}.airbnb_sf_listings_price_predictor", int(baseline_mv.version))
 
 with mlflow.start_run(run_name="model_validation", experiment_id=experiment_id):
 
@@ -256,7 +245,3 @@ with mlflow.start_run(run_name="model_validation", experiment_id=experiment_id):
        print("Candidate model is better than baseline model.")
       
 mlflow.end_run()
-
-# COMMAND ----------
-
-

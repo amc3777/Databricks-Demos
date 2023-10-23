@@ -1,14 +1,32 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC ### Install Python client
+# MAGIC ### Install Python client and run notebook set-up steps
 
 # COMMAND ----------
 
-# MAGIC %pip install "https://ml-team-public-read.s3.amazonaws.com/wheels/data-monitoring/a4050ef7-b183-47a1-a145-e614628e3146/databricks_lakehouse_monitoring-0.3.0-py3-none-any.whl"
+# MAGIC %pip install "https://ml-team-public-read.s3.amazonaws.com/wheels/data-monitoring/a4050ef7-b183-47a1-a145-e614628e3146/databricks_lakehouse_monitoring-0.3.6-py3-none-any.whl"
 
 # COMMAND ----------
 
 dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import warnings
+
+warnings.filterwarnings("ignore")
+
+dbutils.widgets.removeAll()
+
+user = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+uc_prefix = user.replace(".", "").split("@")[0]
+catalog = uc_prefix + "_catalog"
+schema = uc_prefix + "_schema"
+volume = uc_prefix + "_managedvolume"
+
+dbutils.widgets.text("catalog", catalog)
+dbutils.widgets.text("schema", schema)
+dbutils.widgets.text("volume",volume)
 
 # COMMAND ----------
 
@@ -17,8 +35,8 @@ dbutils.library.restartPython()
 
 # COMMAND ----------
 
-CATALOG = "andrewcooleycatalog"
-SCHEMA = "monitoring_example"
+CATALOG = catalog
+SCHEMA = schema
 TABLE_NAME = f"{CATALOG}.{SCHEMA}.airbnb_price_prediction_inferencelogs"
 BASELINE_TABLE = f"{CATALOG}.{SCHEMA}.airbnb_price_prediction_baseline"
 MODEL_NAME = f"{CATALOG}.{SCHEMA}.airbnb_price_prediction"
