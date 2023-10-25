@@ -1,6 +1,15 @@
 # yaml-language-server: $schema=bundle-settings-schema.json
 targets:
+
   development:
     default: true
+    workspace:
+      host: https://dbc-208d8f62-4613.cloud.databricks.com/
+
+  qa:
+    workspace:
+      host: https://dbc-208d8f62-4613.cloud.databricks.com/
+      
+  production:
     workspace:
       host: https://dbc-208d8f62-4613.cloud.databricks.com/
