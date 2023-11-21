@@ -1,0 +1,24 @@
+bundle:
+  name: model-serving-endpoint
+
+workspace:
+  host: https://adb-984752964297111.11.azuredatabricks.net/
+
+targets:
+  development:
+    default: true
+
+resources:
+  model_serving_endpoints:
+    my_model_serving_endpoint:
+      name: "andrewcooley_airbnb_price_prediction_endpoint"
+      config:
+        served_models:
+          - model_name: "andrewcooley_catalog.andrewcooley_schema.airbnb_price_prediction"
+            model_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+
+      permissions:
+        - level: CAN_QUERY
+          group_name: users
