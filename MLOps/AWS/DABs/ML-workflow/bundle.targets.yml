@@ -4,12 +4,12 @@ targets:
   development:
     default: true
     workspace:
-      host: https://dbc-208d8f62-4613.cloud.databricks.com/
+      host: https://e2-demo-field-eng.cloud.databricks.com/
 
   qa:
     workspace:
-      host: https://dbc-208d8f62-4613.cloud.databricks.com/
+      host: https://e2-demo-field-eng.cloud.databricks.com/
       
   production:
     workspace:
-      host: https://dbc-208d8f62-4613.cloud.databricks.com/
+      host: https://e2-demo-field-eng.cloud.databricks.com/
