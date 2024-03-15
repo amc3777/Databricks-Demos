@@ -3,8 +3,19 @@ dbutils.widgets.removeAll()
 
 # COMMAND ----------
 
+import mlflow
+print(mlflow.__version__)
+
+# COMMAND ----------
+
 # MAGIC %pip install -U databricks-sdk
+# MAGIC %pip install -U mlflow
 # MAGIC dbutils.library.restartPython()
+
+# COMMAND ----------
+
+import mlflow
+print(mlflow.__version__)
 
 # COMMAND ----------
 
@@ -106,10 +117,20 @@ generate = mlflow.pyfunc.spark_udf(spark, logged_model, "string")
 
 import pandas as pd
 
-df = spark.createDataFrame(pd.DataFrame({"text": pd.Series("What is ML?")}))
+data = {
+    'messages': [
+        [{'content': 'What is ML?', 'role': 'user'}]
+    ]
+}
+
+df = spark.createDataFrame(pd.DataFrame(data))
+
+print(df)
+
+# COMMAND ----------
 
 # You can use the UDF directly on a text column
-generated_df = df.select(generate(df.text).alias('generated_text'))
+generated_df = df.select(generate(df.messages).alias('generated_text'))
 
 # COMMAND ----------
 
